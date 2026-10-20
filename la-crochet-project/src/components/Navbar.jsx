@@ -1,16 +1,17 @@
 import { useState } from "react";
+
 import shoppingcart from "../assets/cart/shopping-cart.svg";
 import lecrochetlogo from "../assets/lacrochetlogo.svg";
 import account from "../assets/gen/account.svg";
 import search from "../assets/gen/search-icon.svg";
 
-export default function Navbar() {
+export default function Navbar({onLoginClick}) {
   const user = null;
   const [menuOpen, setMenuOpen] = useState(false);
-
+  
   return (
     <header>
-      <nav className="grid grid-cols-[1fr_auto_1fr] items-center gap-6 p-4 px-12 transparent">
+      <nav className="grid grid-cols-[1fr_auto] items-center gap-4 px-4 py-4 xl:grid-cols-[1fr_auto_1fr] xl:px-12">
         <a href="#">
           <img src={lecrochetlogo} alt="lacrochet-logo" />
         </a>
@@ -32,7 +33,7 @@ export default function Navbar() {
         </div>
 
         <div className="flex item-center gap-4 justify-self-end">
-          <div className="flex items-center border border-black/40 rounded-full ">
+          <div className="hidden xl:flex items-center border border-black/40 rounded-full">
             <input
               className="p-2 mx-4 focus:outline-none"
               type="text"
@@ -58,10 +59,14 @@ export default function Navbar() {
               </>
             ) : (
               <>
-                <a href="#">Login</a>
+                <button onClick={onLoginClick}>Login</button>
               </>
             )}
           </div>
+
+          <button type="submit" className="cursor-pointer">
+            <img className="w-6 h-6 mx-4 xl:hidden" src={search} alt="Search" />
+          </button>
 
           <button
             type="button"
@@ -80,7 +85,7 @@ export default function Navbar() {
       {menuOpen && (
         <div
           id="mobile-menu"
-          className="flex flex-col gap-4 border-t bg-white p-4 justify-end xl:hidden"
+          className="flex flex-col gap-4 border-t bg-white p-4 items-end xl:hidden"
         >
           {["Home", "Products", "About", "Contact"].map((label) => (
             <a key={label} href="#" onClick={() => setMenuOpen(false)}>
@@ -89,6 +94,7 @@ export default function Navbar() {
           ))}
         </div>
       )}
+
     </header>
   );
 }
