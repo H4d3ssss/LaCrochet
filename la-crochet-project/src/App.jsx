@@ -1,9 +1,9 @@
 import './App.css'
-import AuthPage from './pages/AuthPage';
+import LandingPage from './pages/LandingPage';
 
 export default function App() {
   return (
-    <AuthPage />
+    <LandingPage />
   );
 }
 
