@@ -1,7 +1,17 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from lalamove import LalamoveSDK
+from lalamove.enums import Market
+from dotenv import load_dotenv
 
 app = FastAPI()
+
+sdk = LalamoveSDK(
+    market=Market.PH, 
+    api_key= load_dotenv().get("LALAMOVE_API_KEY"),
+    api_secret=load_dotenv().get("LALAMOVE_API_SECRET"),
+    sandbox=True
+    )
 
 origins = [
     'http://localhost:5173', # Default Vite dev server port
