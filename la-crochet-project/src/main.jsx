@@ -4,12 +4,13 @@ import './index.css'
 import App from './App.jsx'
 import Header from './Components/Header.jsx'
 import Footer from './Components/Footer.jsx'
+import LandingPage from './LandingPage.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <>
     <Header />
-    <App />
+    <LandingPage />
     <Footer />
     </>
   </StrictMode>,
