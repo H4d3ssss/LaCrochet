@@ -13,7 +13,7 @@ export default function Navbar({onLoginClick}) {
     <header>
       <nav className="grid grid-cols-[1fr_auto] items-center gap-4 px-4 py-4 xl:grid-cols-[1fr_auto_1fr] xl:px-12">
         <a href="#">
-          <img src={lecrochetlogo} alt="lacrochet-logo" />
+          <img src={lecrochetlogo} alt="lacrochet-logo"/>
         </a>
         <div className="hidden xl:flex nav-links">
           <ul className="flex flex-row space-x-4 text-black">

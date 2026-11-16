@@ -1,4 +1,4 @@
-function Header() {
+export default function Header() {
   return (
     <nav className="sticky top-0 z-50 flex flex-col bg-[#F6EFE6]">
       <div className="flex items-center justify-between gap-4 p-4">
@@ -34,7 +34,7 @@ function Header() {
 
         {/* Search */}
         <div className="hidden max-w-xs flex-1 items-center lg:flex">
-          <i className="fa-solid fa-magnifying-glass mr-2 text-[#55433B]" />
+          <i className="fa-solid fa-magnifying-glass mr-2 text-[q]" />
           <input
             type="text"
             placeholder="Search yarns, hooks, patterns..."
@@ -66,5 +66,3 @@ function Header() {
     </nav>
   );
 }
-
-export default Header;
