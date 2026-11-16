@@ -1,7 +1,6 @@
 import { useState } from "react";
 
 import shoppingcart from "../assets/cart/shopping-cart.svg";
-import lecrochetlogo from "../assets/lacrochetlogo.svg";
 import account from "../assets/gen/account.svg";
 import search from "../assets/gen/search-icon.svg";
 
@@ -12,11 +11,13 @@ export default function Navbar({onLoginClick}) {
   return (
     <header>
       <nav className="grid grid-cols-[1fr_auto] items-center gap-4 px-4 py-4 xl:grid-cols-[1fr_auto_1fr] xl:px-12 bg-[#A90000] text-[#FFE6D9] font-bold">
-        <a href="#">
-          <img src={lecrochetlogo} alt="lacrochet-logo"/>
-        </a>
+        <div className="flex items-center gap-4">
+          <a href="#" className="text-2xl font-bold p-2 font-serif">
+            LaCrochet.
+          </a>
+        </div>
         <div className="hidden xl:flex nav-links">
-          <ul className="flex flex-row space-x-4 text-[#FFE6D9] font-bold">
+          <ul className="flex flex-row space-x-4 text-[#FFE6D9] font-normal">
             <li>
               <a href="#">Home</a>
             </li>
@@ -59,7 +60,7 @@ export default function Navbar({onLoginClick}) {
               </>
             ) : (
               <>
-                <button onClick={onLoginClick}>Login</button>
+                <button onClick={onLoginClick} className="cursor-pointer">Login</button>
               </>
             )}
           </div>
