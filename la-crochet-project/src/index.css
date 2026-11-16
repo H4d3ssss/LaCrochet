@@ -11,4 +11,8 @@
   .icon-button {
     @apply flex items-center justify-center text-center w-full max-w-sm space-y-5 rounded-xl bg-white px-4 py-2 shadow-md cursor-pointer transition-transform transform hover:scale-103;
   }
+
+body {
+  background-color: #FFE6D9;
+}
 }

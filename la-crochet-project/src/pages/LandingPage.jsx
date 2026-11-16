@@ -8,7 +8,7 @@ export default function AuthPage() {
   return (
     <>
       <Navbar onLoginClick={() => setShowLogin(true)} />
-      <main></main>
+      <main className="bg-[#FFE6D9]"></main>
 
       {showLogin && (
         <div

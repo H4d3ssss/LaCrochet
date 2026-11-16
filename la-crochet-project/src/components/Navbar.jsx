@@ -11,12 +11,12 @@ export default function Navbar({onLoginClick}) {
   
   return (
     <header>
-      <nav className="grid grid-cols-[1fr_auto] items-center gap-4 px-4 py-4 xl:grid-cols-[1fr_auto_1fr] xl:px-12">
+      <nav className="grid grid-cols-[1fr_auto] items-center gap-4 px-4 py-4 xl:grid-cols-[1fr_auto_1fr] xl:px-12 bg-[#A90000] text-[#FFE6D9] font-bold">
         <a href="#">
           <img src={lecrochetlogo} alt="lacrochet-logo"/>
         </a>
         <div className="hidden xl:flex nav-links">
-          <ul className="flex flex-row space-x-4 text-black">
+          <ul className="flex flex-row space-x-4 text-[#FFE6D9] font-bold">
             <li>
               <a href="#">Home</a>
             </li>
@@ -33,7 +33,7 @@ export default function Navbar({onLoginClick}) {
         </div>
 
         <div className="flex item-center gap-4 justify-self-end">
-          <div className="hidden xl:flex items-center border border-black/40 rounded-full">
+          <div className="hidden xl:flex items-center border border-black/40 rounded-full text-[#FFE6D9]">
             <input
               className="p-2 mx-4 focus:outline-none"
               type="text"
@@ -47,7 +47,7 @@ export default function Navbar({onLoginClick}) {
             </button>
           </div>
 
-          <div className="flex flex-row space-x-6 items-center">
+          <div className="flex flex-row space-x-6 items-center text-[#FFE6D9]">
             {user ? (
               <>
                 <a href="#">
