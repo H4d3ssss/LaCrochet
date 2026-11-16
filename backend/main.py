@@ -1,16 +1,18 @@
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from lalamove import LalamoveSDK
 from lalamove.enums import Market
 from dotenv import load_dotenv
+from lalamove import LalamoveSDK
 
 app = FastAPI()
 
+load_dotenv()  # Load environment variables from .env file  
+
 sdk = LalamoveSDK(
     market=Market.PH, 
-    api_key= load_dotenv().get("LALAMOVE_API_KEY"),
-    api_secret=load_dotenv().get("LALAMOVE_API_SECRET"),
-    sandbox=True
+    api_key=os.getenv("LALAMOVE_API_KEY"),
+    api_secret=os.getenv("LALAMOVE_API_SECRET"),
     )
 
 origins = [

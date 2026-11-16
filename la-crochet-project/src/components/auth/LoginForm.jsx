@@ -19,7 +19,7 @@ export default function LoginForm() {
       >
         <div>
           <h1 className="text-2xl font-bold text-stone-800">
-            Welcome to <span className="font-lavishly text-4xl"
+            Login to <span className="font-lavishly text-4xl"
             >
               Le Crochet
             </span>
