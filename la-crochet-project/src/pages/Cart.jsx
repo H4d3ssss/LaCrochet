@@ -2,7 +2,7 @@ import { useState } from "react";
 import CheckLogin from "../components/auth/CheckLogin";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
-import placeholder from "../assets/placeholder-img.jpg";
+import { useCart } from "../context/CartContext";
 
 const formatPrice = (amount) =>
   new Intl.NumberFormat("en-PH", {
@@ -10,50 +10,22 @@ const formatPrice = (amount) =>
     currency: "PHP",
   }).format(amount);
 
-const DELIVERY_FEE = 90; // Demo value; replace with the delivery API quote.
+const DELIVERY_FEE = 90; // Placeholder until the delivery API provides a quote.
 
 export default function Cart() {
   const [showLogin, setShowLogin] = useState(false);
   const [shippingMethod, setShippingMethod] = useState("pickup");
 
-  const [cartItems, setCartItems] = useState([
-    {
-      id: 1,
-      name: "Dishie Yarn",
-      image: placeholder,
-      price: 250,
-      quantity: 1,
-    },
-    {
-      id: 2,
-      name: "Brava Worsted Yarn",
-      image: placeholder,
-      price: 180,
-      quantity: 2,
-    },
-  ]);
-
-  const subtotal = cartItems.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
-  );
+  const {
+    cartItems,
+    subtotal,
+    setQuantity,
+    removeItem,
+    isLoading,
+  } = useCart();
 
   const shippingFee = shippingMethod === "delivery" ? DELIVERY_FEE : 0;
   const grandTotal = subtotal + shippingFee;
-
-  function changeQuantity(id, amount) {
-    setCartItems((items) =>
-      items.map((item) =>
-        item.id === id
-          ? { ...item, quantity: Math.max(1, item.quantity + amount) }
-          : item
-      )
-    );
-  }
-
-  function removeItem(id) {
-    setCartItems((items) => items.filter((item) => item.id !== id));
-  }
 
   return (
     <>
@@ -63,7 +35,9 @@ export default function Cart() {
         <div className="mx-auto max-w-6xl">
           <h1 className="mb-8 font-lora text-4xl font-bold">My Cart</h1>
 
-          {cartItems.length === 0 ? (
+          {isLoading ? (
+            <p className="py-10 text-center">Loading cart...</p>
+          ) : cartItems.length === 0 ? (
             <div className="rounded-2xl bg-white/80 p-10 text-center">
               <h2 className="font-lora text-2xl font-semibold">
                 Your cart is empty
@@ -82,17 +56,17 @@ export default function Cart() {
               <div className="divide-y divide-[#D9C9C0]">
                 {cartItems.map((item) => (
                   <article
-                    key={item.id}
+                    key={item.productId}
                     className="grid grid-cols-2 gap-4 py-5 md:grid-cols-[minmax(0,1fr)_120px_150px_120px_32px] md:items-center"
                   >
                     <div className="col-span-2 flex items-center gap-4 md:col-span-1">
                       <img
-                        src={item.image}
-                        alt={item.name}
+                        src={item.product.image}
+                        alt={item.product.name}
                         className="h-20 w-20 shrink-0 rounded-lg bg-white object-cover sm:h-24 sm:w-24"
                       />
                       <h2 className="font-lora text-lg font-semibold">
-                        {item.name}
+                        {item.product.name}
                       </h2>
                     </div>
 
@@ -100,7 +74,7 @@ export default function Cart() {
                       <span className="text-sm text-[#776B64] md:hidden">
                         Price
                       </span>
-                      <p>{formatPrice(item.price)}</p>
+                      <p>{formatPrice(item.product.price)}</p>
                     </div>
 
                     <div>
@@ -110,19 +84,26 @@ export default function Cart() {
                       <div className="mt-1 flex w-fit items-center rounded-full border border-[#CBB8AC] bg-white">
                         <button
                           type="button"
-                          aria-label={`Decrease ${item.name} quantity`}
-                          onClick={() => changeQuantity(item.id, -1)}
-                          className="px-3 py-1"
+                          aria-label={`Decrease ${item.product.name} quantity`}
+                          disabled={item.quantity <= 1}
+                          onClick={() =>
+                            setQuantity(item.productId, item.quantity - 1)
+                          }
+                          className="px-3 py-1 disabled:cursor-not-allowed disabled:opacity-40"
                         >
                           −
                         </button>
+
                         <span className="min-w-8 text-center">
                           {item.quantity}
                         </span>
+
                         <button
                           type="button"
-                          aria-label={`Increase ${item.name} quantity`}
-                          onClick={() => changeQuantity(item.id, 1)}
+                          aria-label={`Increase ${item.product.name} quantity`}
+                          onClick={() =>
+                            setQuantity(item.productId, item.quantity + 1)
+                          }
                           className="px-3 py-1"
                         >
                           +
@@ -135,14 +116,14 @@ export default function Cart() {
                         Total
                       </span>
                       <p className="font-semibold md:text-right">
-                        {formatPrice(item.price * item.quantity)}
+                        {formatPrice(item.product.price * item.quantity)}
                       </p>
                     </div>
 
                     <button
                       type="button"
-                      aria-label={`Remove ${item.name}`}
-                      onClick={() => removeItem(item.id)}
+                      aria-label={`Remove ${item.product.name}`}
+                      onClick={() => removeItem(item.productId)}
                       className="self-center text-xl text-[#776B64] hover:text-[#A90000]"
                     >
                       ×
@@ -190,6 +171,7 @@ export default function Cart() {
                       <dt>Subtotal</dt>
                       <dd>{formatPrice(subtotal)}</dd>
                     </div>
+
                     <div className="flex justify-between">
                       <dt>Shipping</dt>
                       <dd>
@@ -198,6 +180,7 @@ export default function Cart() {
                           : formatPrice(shippingFee)}
                       </dd>
                     </div>
+
                     <div className="flex justify-between border-t border-[#D9C9C0] pt-3 font-bold">
                       <dt>Grand total</dt>
                       <dd>{formatPrice(grandTotal)}</dd>

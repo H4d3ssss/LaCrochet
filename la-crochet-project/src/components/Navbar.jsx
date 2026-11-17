@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router";
 
 import shoppingcart from "../assets/cart/shopping-cart.svg";
 import account from "../assets/gen/account.svg";
@@ -12,14 +13,14 @@ export default function Navbar({onLoginClick}) {
     <header className="sticky top-0 z-50">
       <nav className="grid grid-cols-[1fr_auto] items-center gap-4 px-4 py-4 xl:grid-cols-[1fr_auto_1fr] xl:px-12 bg-[#A90000] text-[#FFE6D9] font-bold">
         <div className="flex items-center gap-4">
-          <a href="#" className="text-2xl font-bold p-2 font-lora">
+          <Link to="/" className="text-2xl font-bold p-2 font-lora">
             LaCrochet.
-          </a>
+          </Link>
         </div>
         <div className="hidden xl:flex nav-links">
           <ul className="flex flex-row space-x-4 text-[#FFE6D9] font-nunito">
             <li>
-              <a href="#">Home</a>
+              <Link to="/">Home</Link>
             </li>
             <li>
               <a href="#">Products</a>
