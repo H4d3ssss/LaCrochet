@@ -7,12 +7,14 @@ import LandingPage from './pages/LandingPage';
 
 // IMPORT HERE FOR PAGE TESTING
 import ProductPage from './pages/ProductPage.jsx';
+import Cart from './pages/Cart.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <>
       {/* <LandingPage /> */}
-      <ProductPage />
+      {/* <ProductPage /> */}
+      <Cart/>
     </>
   </StrictMode>,
 )
