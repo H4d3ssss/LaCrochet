@@ -1,11 +1,11 @@
 function Footer() {
   return (
-    <footer className="bg-[#3F0000] text-stone-300 py-16 px-4">
+    <footer className="bg-[#3F0000] text-stone-300 py-16 px-4 font-serif">
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
 
         {/* Brand + Newsletter */}
         <div className="lg:col-span-2">
-          <h1 className="font-serif font-bold text-2xl text-white mb-3">
+          <h1 className="font-bold text-2xl text-white mb-3">
             LaCrochet.
           </h1>
           <p className="text-sm text-[#D39171] mb-6">

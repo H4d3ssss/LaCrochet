@@ -19,9 +19,9 @@ export default function LoginForm() {
       >
         <div>
           <h1 className="text-2xl font-bold text-stone-800">
-            Login to <span className="font-lavishly text-4xl"
+            Login to <span className="font-serif text-3xl"
             >
-              Le Crochet
+              LaCrochet.
             </span>
           </h1>
           <p className="mt-2 text-sm text-stone-500">
@@ -48,7 +48,7 @@ export default function LoginForm() {
                 onChange={(event) => setEmail(event.target.value)}
                 placeholder="you@example.com"
                 required
-                className="w-full rounded-lg border border-stone-300 px-4 py-2 outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-200"
+                className="w-full rounded-lg border border-stone-300 px-4 py-2 outline-none focus:border-[#A90000] focus:ring-2 focus:ring-[#3F0000]"
               />
             </div>
 
@@ -60,7 +60,7 @@ export default function LoginForm() {
                 Password
               </label>
 
-              <div className="flex flex-row items-center justify-between border rounded-lg border-stone-300 focus-within:border-rose-500 focus-within:ring-2 focus-within:ring-rose-200">
+              <div className="flex flex-row items-center justify-between border rounded-lg border-stone-300 focus-within:border-[#A90000] focus-within:ring-2 focus-within:ring-[#3F0000]">
                 <input
                   id="password"
                   name="password"
@@ -74,7 +74,7 @@ export default function LoginForm() {
                 />
 
                 <a
-                  className="px-4 py-2 text-sm font-medium text-rose-600 hover:text-rose-800 shrink-0"
+                  className="px-4 py-2 text-sm font-medium text-[#A90000] hover:text-[#3F0000] shrink-0"
                   href="#"
                 >
                   Forgot?
@@ -96,15 +96,15 @@ export default function LoginForm() {
         <div className="space-y-2">
           <button
             type="submit"
-            className="w-full rounded-lg bg-rose-600 px-4 py-2 font-semibold text-white transition-colors hover:bg-rose-800 cursor-pointer"
+            className="w-full rounded-lg bg-[#A90000] px-4 py-2 font-semibold text-white transition-colors hover:bg-[#3F0000] cursor-pointer"
           >
             Sign in
           </button>
 
           <div className="flex items-center justify-center text-sm text-stone-400">
-            <div className="h-px w-full bg-stone-300 my-4" />
+            <div className="h-px w-full bg-[#A90000] my-4" />
             <p className="px-4">or</p>
-            <div className="h-px w-full bg-stone-300 my-4" />
+            <div className="h-px w-full bg-[#A90000] my-4" />
           </div>
 
           <SocialLogin />
@@ -112,9 +112,9 @@ export default function LoginForm() {
 
         <div className="text-xs text-center align-center">
           By logging in, you agree to LaCrochet's
-          <a className="text-rose-600" href="#"> Terms of Service </a>
+          <a className="text-[#A90000]" href="#"> Terms of Service </a>
           &
-          <a className="text-rose-600" href="#"> Privacy Policy</a>
+          <a className="text-[#A90000]" href="#"> Privacy Policy</a>
         </div>
       </form>
     </>

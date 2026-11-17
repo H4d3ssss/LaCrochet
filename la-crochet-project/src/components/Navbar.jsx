@@ -9,15 +9,15 @@ export default function Navbar({onLoginClick}) {
   const [menuOpen, setMenuOpen] = useState(false);
   
   return (
-    <header>
+    <header className="sticky top-0 z-50">
       <nav className="grid grid-cols-[1fr_auto] items-center gap-4 px-4 py-4 xl:grid-cols-[1fr_auto_1fr] xl:px-12 bg-[#A90000] text-[#FFE6D9] font-bold">
         <div className="flex items-center gap-4">
-          <a href="#" className="text-2xl font-bold p-2 font-serif">
+          <a href="#" className="text-2xl font-bold p-2 font-lora">
             LaCrochet.
           </a>
         </div>
         <div className="hidden xl:flex nav-links">
-          <ul className="flex flex-row space-x-4 text-[#FFE6D9] font-normal">
+          <ul className="flex flex-row space-x-4 text-[#FFE6D9] font-nunito">
             <li>
               <a href="#">Home</a>
             </li>

@@ -5,6 +5,8 @@
   --font-poppins: "Poppins", sans-serif;
   --font-lavishly: "Lavishly", sans-serif;
   --font-yesteryear: "Yesteryear", sans-serif;
+  --font-lora: "Lora", sans-serif;
+  --font-nunino: "Nunito", sans-serif;
 }
 
 @layer components {
@@ -14,5 +16,13 @@
 
 body {
   background-color: #FFE6D9;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-lora);
+}
+
+a, p, span {
+  font-family: var(--font-nunito);
 }
 }

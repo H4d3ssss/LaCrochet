@@ -5,11 +5,14 @@ import App from './App.jsx'
 // import Header from './Components/Header.jsx'
 import LandingPage from './pages/LandingPage';
 
+// IMPORT HERE FOR PAGE TESTING
+import ProductPage from './pages/ProductPage.jsx';
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <>
-      {/* <Header /> */}
-      <LandingPage />
+      {/* <LandingPage /> */}
+      <ProductPage />
     </>
   </StrictMode>,
 )
