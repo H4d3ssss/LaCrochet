@@ -5,7 +5,15 @@ from lalamove.enums import Market
 from dotenv import load_dotenv
 from lalamove import LalamoveSDK
 
-app = FastAPI()
+# Import routers
+from routes.productRoutes import router as product_router
+from routes.userRoutes import router as user_router
+
+app = FastAPI(
+    title="La Crochet API",
+    description="API for La Crochet e-commerce platform",
+    version="1.0.0",
+)
 
 load_dotenv()  # Load environment variables from .env file  
 
@@ -31,12 +39,5 @@ app.add_middleware(
 def read_root():
     return {"message": "La Crochet API is running!"}
 
-@app.get("/api/products")
-def get_products():
-    # Sample product data
-    products = [
-        {"id": 1, "name": "Product 1", "price": 10.99},
-        {"id": 2, "name": "Product 2", "price": 19.99},
-        {"id": 3, "name": "Product 3", "price": 5.99},
-    ]
-    return products
+app.include_router(product_router, prefix="/api", tags=["Products"])
+app.include_router(user_router, prefix="/api", tags=["Auth"])

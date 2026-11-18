@@ -5,6 +5,8 @@
   --font-poppins: "Poppins", sans-serif;
   --font-lavishly: "Lavishly", sans-serif;
   --font-yesteryear: "Yesteryear", sans-serif;
+  --font-lora: "Lora", sans-serif;
+  --font-nunino: "Nunito", sans-serif;
 }
 
 @layer components {
@@ -12,7 +14,11 @@
     @apply flex items-center justify-center text-center w-full max-w-sm space-y-5 rounded-xl bg-white px-4 py-2 shadow-md cursor-pointer transition-transform transform hover:scale-103;
   }
 
-body {
-  background-color: #FFE6D9;
+h1, h2, h3 {
+  font-family: var(--font-lora);
+}
+
+a, p, span {
+  font-family: var(--font-nunito);
 }
 }

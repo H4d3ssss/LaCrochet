@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 420" role="img" aria-labelledby="title description">
+  <title id="title">La Crochet</title>
+  <desc id="description">A warm, artisan logo with a ball of yarn and crochet hook beside the La Crochet wordmark.</desc>
+  <defs>
+    <clipPath id="yarn-ball-clip">
+      <path d="M190 55c71 0 125 59 125 137 0 76-53 139-126 139-72 0-131-59-131-137S117 55 190 55Z"/>
+    </clipPath>
+  </defs>
+
+  <!-- Yarn ball -->
+  <path d="M190 55c71 0 125 59 125 137 0 76-53 139-126 139-72 0-131-59-131-137S117 55 190 55Z"
+        fill="#FFE6D9" stroke="#3F0000" stroke-width="11"/>
+  <g clip-path="url(#yarn-ball-clip)" fill="none" stroke-linecap="round">
+    <path d="M44 139c57 30 117 29 181-2 38-18 72-23 110-15" stroke="#A90000" stroke-width="13"/>
+    <path d="M42 187c62 32 126 31 192-3 36-18 72-25 113-17" stroke="#3F0000" stroke-width="11"/>
+    <path d="M48 238c57 30 119 29 184-2 42-20 77-24 119-13" stroke="#A90000" stroke-width="13"/>
+    <path d="M79 70c15 64 51 126 112 192 24 26 41 51 50 78" stroke="#3F0000" stroke-width="11"/>
+    <path d="M127 48c5 59 33 117 88 174 30 31 53 63 65 99" stroke="#A90000" stroke-width="12"/>
+    <path d="M276 77c-19 54-57 105-114 153-36 30-62 64-79 101" stroke="#3F0000" stroke-width="11"/>
+  </g>
+
+  <!-- Crochet hook and loose yarn tail -->
+  <path d="M291 72c14-21 43-15 46 4 3 16-12 28-28 22-8-3-11-10-8-17M301 91 275 128"
+        fill="none" stroke="#A90000" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M80 285c-13 29-8 52 12 66 20 14 45 10 58-8"
+        fill="none" stroke="#3F0000" stroke-width="10" stroke-linecap="round"/>
+
+  <!-- Wordmark -->
+  <text x="415" y="151" fill="#A90000" font-family="Georgia, 'Times New Roman', serif" font-size="76" font-style="italic">La</text>
+  <text x="414" y="285" fill="#3F0000" font-family="Georgia, 'Times New Roman', serif" font-size="142" letter-spacing="-4">Crochet</text>
+  <path d="M420 326h442" stroke="#A90000" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="882" cy="326" r="7" fill="#A90000"/>
+</svg>
