@@ -111,7 +111,7 @@ function SearchBar({ onClose }) {
   return (
     <div
       id="search-bar-container"
-      className="border-t border-black/5 bg-black/3 px-4 py-4"
+      className="border-t border-black/5 bg-[#f7f7f7] px-4 py-4"
     >
       <div className="max-w-3xl mx-auto relative flex items-center">
         <img src={search} alt="" className="absolute left-4 w-5 h-5" />
