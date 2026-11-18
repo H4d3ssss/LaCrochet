@@ -12,7 +12,7 @@ export default function Navbar({ onLoginClick }) {
   const [searchOpen, setSearchOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 shadow-2xs">
+    <header className="sticky top-0 z-50 shadow-2xs bg-white">
       <nav className="grid grid-cols-[1fr_auto] items-center gap-4 px-4 py-4 xl:grid-cols-[1fr_auto_1fr] xl:px-12 bg-white text-black font-bold max-w-7xl mx-auto sm:px-6 lg:px-2">
         <div className="flex items-center gap-4">
           <Link to="/" className="text-2xl font-bold p-2 font-lora">

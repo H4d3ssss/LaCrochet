@@ -2,10 +2,8 @@ import { useEffect, useState } from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import ProductCard from "../components/catalog/ProductCard";
-import CheckLogin from "../components/auth/CheckLogin";
 
 export default function CatalogPage() {
-  const [showLogin, setShowLogin] = useState(false);
   const [products, setProducts] = useState([]);
 
   useEffect(() => {
@@ -290,7 +288,6 @@ export default function CatalogPage() {
         </div>
       </main>
       <Footer />
-      <CheckLogin showLogin={showLogin} setShowLogin={setShowLogin}/>
     </>
   );
 }

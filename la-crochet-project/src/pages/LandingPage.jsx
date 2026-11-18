@@ -11,7 +11,7 @@ import indoyarn from "../assets/landing-page-carousel/indophil-yarn.webp";
 import yarn from "../assets/landing-page-carousel/yarn.jpg";
 
 
-export default function AuthPage() {
+export default function LandingPage() {
   const [showLogin, setShowLogin] = useState(false);
 
   const carouselSlides = [

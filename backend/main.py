@@ -1,9 +1,14 @@
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from lalamove.enums import Market
 from dotenv import load_dotenv
+
+#lalamove api
+from lalamove.enums import Market
 from lalamove import LalamoveSDK
+
+#payrex api
+from payrex import Client as PayrexClient
 
 # Import routers
 from routes.productRoutes import router as product_router
@@ -15,13 +20,15 @@ app = FastAPI(
     version="1.0.0",
 )
 
-load_dotenv()  # Load environment variables from .env file  
+load_dotenv()  # Load environment variables from .env file
 
 sdk = LalamoveSDK(
-    market=Market.PH, 
+    market=Market.PH,
     api_key=os.getenv("LALAMOVE_API_KEY"),
     api_secret=os.getenv("LALAMOVE_API_SECRET"),
     )
+
+payrex = PayrexClient(os.getenv("PAYREX_API_SECRET"))
 
 origins = [
     'http://localhost:5173', # Default Vite dev server port
@@ -41,3 +48,4 @@ def read_root():
 
 app.include_router(product_router, prefix="/api", tags=["Products"])
 app.include_router(user_router, prefix="/api", tags=["Auth"])
+# app.include_router(route, prefix="", tags=[])

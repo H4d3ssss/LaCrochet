@@ -1,5 +1,4 @@
 import { useState } from "react";
-import CheckLogin from "../components/auth/CheckLogin";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { useCart } from "../context/CartContext";
@@ -13,7 +12,6 @@ const formatPrice = (amount) =>
 const DELIVERY_FEE = 90; // Placeholder until the delivery API provides a quote.
 
 export default function Cart() {
-  const [showLogin, setShowLogin] = useState(false);
   const [shippingMethod, setShippingMethod] = useState("pickup");
 
   const {
@@ -29,7 +27,6 @@ export default function Cart() {
 
   return (
     <>
-      <Navbar onLoginClick={() => setShowLogin(true)} />
 
       <main className="min-h-screen bg-[#FFE6D9] px-4 py-10 text-[#3E302A] sm:px-6">
         <div className="mx-auto max-w-6xl">
@@ -202,7 +199,6 @@ export default function Cart() {
       </main>
 
       <Footer />
-      <CheckLogin showLogin={showLogin} setShowLogin={setShowLogin} />
     </>
   );
 }
