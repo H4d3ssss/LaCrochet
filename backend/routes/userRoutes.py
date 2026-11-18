@@ -19,6 +19,15 @@ CURRENT_TERMS_VERSION = datetime(2026, 11, 18)
 DUPLICATE_EMAIL = "An account with this email already exists."
 
 
+MYSQL_DUPLICATE_ENTRY = 1062
+
+
+def _is_duplicate_key(exc: IntegrityError) -> bool:
+    """True only for MySQL 'Duplicate entry' (error 1062)."""
+    args = getattr(exc.orig, "args", ())
+    return bool(args) and args[0] == MYSQL_DUPLICATE_ENTRY
+
+
 def _utcnow() -> datetime:
     """Naive UTC, matching the DATETIME columns."""
     return datetime.now(timezone.utc).replace(tzinfo=None)
@@ -53,9 +62,13 @@ def register(payload: UserRegister, db: Session = Depends(get_db)):
     try:
         db.add(user)
         db.flush()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status.HTTP_409_CONFLICT, DUPLICATE_EMAIL)
+        if _is_duplicate_key(exc):
+            raise HTTPException(status.HTTP_409_CONFLICT, DUPLICATE_EMAIL)
+        # Any other integrity error (NOT NULL, foreign key, ...) is a real bug
+        # or a schema mismatch: let it surface in the server log as a 500.
+        raise
 
     # User and address are saved together: if the address fails, neither is kept.
     try:
