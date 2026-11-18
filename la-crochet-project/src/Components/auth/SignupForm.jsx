@@ -20,6 +20,7 @@ function Field({ label, id, ...props }) {
 }
 
 export default function SignupForm({
+  onLogin,
   onClose,
   onLoginClick,
   onSignup = registerUser,
@@ -71,7 +72,9 @@ export default function SignupForm({
       await onSignup(account);
       setCreatedName(account.firstName);
     } catch (err) {
-      setError(err?.message || "Could not create your account. Please try again.");
+      setError(
+        err?.message || "Could not create your account. Please try again.",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -432,6 +435,15 @@ export default function SignupForm({
               </p>
             )}
           </form>
+          <div className="mt-6 flex items-center justify-center gap-4 text-sm text-stone-500">
+            <button
+              type="button"
+              onClick={onLogin}
+              className="cursor-pointer font-normal text-black hover:underline"
+            >
+              Go back to login
+            </button>
+          </div>
         </section>
       </div>
     </div>

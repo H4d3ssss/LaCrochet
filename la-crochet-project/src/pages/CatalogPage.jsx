@@ -6,7 +6,6 @@ import CheckLogin from "../components/auth/CheckLogin";
 import { useCart } from "../context/CartContext";
 
 export default function CatalogPage() {
-  const [showLogin, setShowLogin] = useState(false);
   const [products, setProducts] = useState([]);
   const { addToCart } = useCart();
 
@@ -292,7 +291,6 @@ export default function CatalogPage() {
         </div>
       </main>
       <Footer />
-      <CheckLogin showLogin={showLogin} setShowLogin={setShowLogin}/>
     </>
   );
 }

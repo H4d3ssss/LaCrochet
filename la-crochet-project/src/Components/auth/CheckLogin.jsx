@@ -1,30 +1,31 @@
-import LoginForm from "./LoginForm";
+import AuthModal from "../AuthModal";
 
 export default function CheckLogin({ showLogin, setShowLogin }) {
+  if (!showLogin) return null;
+
   return (
-    showLogin && (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-black/30 p-4 backdrop-blur-[3px]"
+      onClick={() => setShowLogin(false)}
+    >
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4"
-        onClick={() => setShowLogin(false)}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Account access"
+        className="relative my-auto w-full max-w-sm"
+        onClick={(event) => event.stopPropagation()}
       >
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label="Login"
-          className="relative w-full max-w-sm"
-          onClick={(event) => event.stopPropagation()}
+        <button
+          type="button"
+          aria-label="Close"
+          className="absolute right-3 top-3 z-10 cursor-pointer"
+          onClick={() => setShowLogin(false)}
         >
-          <button
-            type="button"
-            aria-label="Close login"
-            className="absolute right-3 top-3 z-10"
-            onClick={() => setShowLogin(false)}
-          >
-            ✕
-          </button>
-          <LoginForm />
-        </div>
+          ✕
+        </button>
+
+        <AuthModal />
       </div>
-    )
+    </div>
   );
 }
