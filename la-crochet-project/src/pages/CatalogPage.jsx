@@ -3,10 +3,12 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import ProductCard from "../components/catalog/ProductCard";
 import CheckLogin from "../components/auth/CheckLogin";
+import { useCart } from "../context/CartContext";
 
 export default function CatalogPage() {
   const [showLogin, setShowLogin] = useState(false);
   const [products, setProducts] = useState([]);
+  const { addToCart } = useCart();
 
   useEffect(() => {
     async function loadProducts() {
@@ -260,7 +262,7 @@ export default function CatalogPage() {
                   product={product}
                   openProductModal={() => {}}
                   toggleWishlist={() => {}}
-                  addToCart={() => {}}
+                  addToCart={() => addToCart(product)}
                 />
               ))}
             </div>
