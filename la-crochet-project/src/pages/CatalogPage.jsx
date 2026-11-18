@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import ProductCard from "../components/catalog/ProductCard";
+import CheckLogin from "../components/auth/CheckLogin";
 
 export default function CatalogPage() {
   const [showLogin, setShowLogin] = useState(false);
@@ -30,7 +31,7 @@ export default function CatalogPage() {
   }, []);
 
   return (
-    <div>
+    <>
       <div className="bg-black/95 text-white text-xs tracking-widest text-center py-2 px-4 uppercase font-poppins">
         <p>
           Complimentary worldwide shipping on orders over $150 &mdash;
@@ -289,6 +290,7 @@ export default function CatalogPage() {
         </div>
       </main>
       <Footer />
-    </div>
+      <CheckLogin showLogin={showLogin} setShowLogin={setShowLogin}/>
+    </>
   );
 }
