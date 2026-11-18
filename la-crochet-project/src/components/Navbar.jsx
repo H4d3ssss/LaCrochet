@@ -1,55 +1,55 @@
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link } from "react-router-dom";
 
 import shoppingcart from "../assets/cart/shopping-cart.svg";
 import account from "../assets/gen/account.svg";
 import search from "../assets/gen/search-icon.svg";
+import heart from "../assets/gen/heart.svg";
 
-export default function Navbar({onLoginClick}) {
+export default function Navbar({ onLoginClick }) {
   const user = null;
   const [menuOpen, setMenuOpen] = useState(false);
-  
+  const [searchOpen, setSearchOpen] = useState(false);
+
   return (
-    <header className="sticky top-0 z-50">
-      <nav className="grid grid-cols-[1fr_auto] items-center gap-4 px-4 py-4 xl:grid-cols-[1fr_auto_1fr] xl:px-12 bg-[#A90000] text-[#FFE6D9] font-bold">
+    <header className="sticky top-0 z-50 shadow-2xs">
+      <nav className="grid grid-cols-[1fr_auto] items-center gap-4 px-4 py-4 xl:grid-cols-[1fr_auto_1fr] xl:px-12 bg-white text-black font-bold max-w-7xl mx-auto sm:px-6 lg:px-2">
         <div className="flex items-center gap-4">
           <Link to="/" className="text-2xl font-bold p-2 font-lora">
             LaCrochet.
           </Link>
         </div>
-        <div className="hidden xl:flex nav-links">
-          <ul className="flex flex-row space-x-4 text-[#FFE6D9] font-nunito">
-            <li>
+        <div className="hidden xl:flex nav-links font-poppins font-light text-sm">
+          <ul className="flex flex-row space-x-4 text-black font-nunito ">
+            <li className="text-black/65 hover:text-black transition-colors">
               <Link to="/">Home</Link>
             </li>
-            <li>
-              <a href="#">Products</a>
+            <li className="text-black/65 hover:text-black transition-colors">
+              <a href="#">Catalog</a>
             </li>
-            <li>
+            <li className="text-black/65 hover:text-black transition-colors">
               <a href="#">About</a>
             </li>
-            <li>
+            <li className="text-black/65 hover:text-black transition-colors">
               <a href="#">Contact</a>
             </li>
           </ul>
         </div>
 
         <div className="flex item-center gap-4 justify-self-end">
-          <div className="hidden xl:flex items-center border border-black/40 rounded-full text-[#FFE6D9]">
-            <input
-              className="p-2 mx-4 focus:outline-none"
-              type="text"
-              name="search"
-              id="search"
-              placeholder="Search"
-            />
+          <button
+            type="button"
+            className="cursor-pointer"
+            onClick={() => setSearchOpen((previous) => !previous)}
+          >
+            <img className="w-5 h-5 mx-2" src={search} alt="Search" />
+          </button>
 
-            <button type="submit" className="cursor-pointer">
-              <img className="w-6 h-6 mx-4" src={search} alt="Search" />
-            </button>
-          </div>
+          <button type="button" className="cursor-pointer">
+            <img className="w-5 h-5 mx-2" src={heart} alt="Heart" />
+          </button>
 
-          <div className="flex flex-row space-x-6 items-center text-[#FFE6D9]">
+          <div className="flex flex-row space-x-6 items-center text-black">
             {user ? (
               <>
                 <a href="#">
@@ -61,7 +61,12 @@ export default function Navbar({onLoginClick}) {
               </>
             ) : (
               <>
-                <button onClick={onLoginClick} className="cursor-pointer">Login</button>
+                <button
+                  onClick={onLoginClick}
+                  className="cursor-pointer font-normal"
+                >
+                  Login
+                </button>
               </>
             )}
           </div>
@@ -84,6 +89,8 @@ export default function Navbar({onLoginClick}) {
         </div>
       </nav>
 
+      {searchOpen && <SearchBar onClose={() => setSearchOpen(false)} />}
+
       {menuOpen && (
         <div
           id="mobile-menu"
@@ -96,7 +103,35 @@ export default function Navbar({onLoginClick}) {
           ))}
         </div>
       )}
-
     </header>
+  );
+}
+
+function SearchBar({ onClose }) {
+  return (
+    <div
+      id="search-bar-container"
+      className="border-t border-black/5 bg-black/3 px-4 py-4"
+    >
+      <div className="max-w-3xl mx-auto relative flex items-center">
+        <img src={search} alt="" className="absolute left-4 w-5 h-5" />
+
+        <input
+          type="search"
+          id="header-search-input"
+          placeholder="Search by product name, category, or color..."
+          className="w-full bg-white border border-brand-100 rounded-lg pl-12 pr-10 py-3 text-sm focus:outline-none focus:border-brand-900 shadow-sm"
+        />
+
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close search"
+          className="absolute right-4 text-neutral-400 hover:text-brand-900 cursor-pointer"
+        >
+          ✕
+        </button>
+      </div>
+    </div>
   );
 }

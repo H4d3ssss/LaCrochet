@@ -1,56 +1,106 @@
-function Footer() {
+import { Link } from "react-router-dom";
+
+const footerGroups = [
+  {
+    title: "Shop",
+    links: [
+      "Yarn & Fibers",
+      "Hooks & Notions",
+      "Crochet Kits",
+      "Patterns & Guides",
+      "Finished Goods",
+    ],
+  },
+  {
+    title: "Customer Care",
+    links: [
+      "Track My Order",
+      "Shipping & Delivery",
+      "Returns & Exchanges",
+      "FAQs",
+      "Contact Us",
+    ],
+  },
+];
+
+export default function Footer() {
   return (
-    <footer className="bg-[#3F0000] text-stone-300 py-16 px-4 font-serif">
-      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+    <footer className="bg-black/2 text-black/50 font-nunito">
+      <div className="max-w-7xl mx-auto px-8 py-12">
+        <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1.5fr]">
+          <div className="max-w-sm">
+            <Link to="/" className="font-lora text-2xl font-bold text-black">
+              LaCrochet.
+            </Link>
 
-        {/* Brand + Newsletter */}
-        <div className="lg:col-span-2">
-          <h1 className="font-bold text-2xl text-white mb-3">
-            LaCrochet.
-          </h1>
-          <p className="text-sm text-[#D39171] mb-6">
-            Your cozy corner for artisanal crochet supplies, pattern drops, and timeless handmade pieces crafted locally in the Philippines.
+            <p className="mt-4 text-sm leading-7">
+              Your cozy corner for crochet supplies, creative patterns, and
+              locally handcrafted pieces in the Philippines.
+            </p>
+          </div>
+
+          {footerGroups.map((group) => (
+            <div key={group.title}>
+              <h3 className="mb-4 text-sm font-bold text-black">
+                {group.title}
+              </h3>
+
+              <ul className="space-y-3 text-sm">
+                {group.links.map((label) => (
+                  <li key={label}>
+                    <a
+                      href="#"
+                      className="transition-colors hover:text-black"
+                    >
+                      {label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+
+          <div className="min-w-0">
+            <h3 className="mb-4 text-sm font-bold text-black">
+              Newsletter
+            </h3>
+
+            <p className="mb-4 text-sm leading-7">
+              Subscribe for early access to limited editions and design notes.
+            </p>
+
+            <form
+              className="flex overflow-hidden rounded-lg border border-black/15"
+              onSubmit={(event) => {
+                event.preventDefault();
+                // Add your subscription logic here.
+              }}
+            >
+              <input
+                type="email"
+                name="email"
+                required
+                aria-label="Email address"
+                placeholder="Enter your email"
+                className="min-w-0 flex-1 bg-white px-3 py-2 text-sm text-black outline-none focus:ring-2 focus:ring-inset focus:ring-black/30"
+              />
+
+              <button
+                type="submit"
+                className="cursor-pointer bg-black px-4 py-2 text-sm text-white transition-colors hover:bg-black/80"
+              >
+                Join
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <div className="mt-10 border-t border-black/5 pt-6">
+          <p className="text-xs text-black/30">
+            &copy; {new Date().getFullYear()} LaCrochet. All rights reserved.
           </p>
-        </div>
-
-        {/* Shop */}
-        <div>
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-white mb-4">Shop</h3>
-          <ul className="space-y-2 text-sm">
-            <li><a href="#" className="text-[#D39171] hover:text-white transition">Yarn & Fibers</a></li>
-            <li><a href="#" className="text-[#D39171] hover:text-white transition">Hooks & Notions</a></li>
-            <li><a href="#" className="text-[#D39171] hover:text-white transition">Crochet Kits</a></li>
-            <li><a href="#" className="text-[#D39171] hover:text-white transition">Patterns & Guides</a></li>
-            <li><a href="#" className="text-[#D39171] hover:text-white transition">Finished Goods</a></li>
-          </ul>
-        </div>
-
-        {/* Customer Care */}
-        <div>
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-white mb-4">Customer Care</h3>
-          <ul className="space-y-2 text-sm">
-            <li><a href="#" className="text-[#D39171] hover:text-white transition">Track My Order</a></li>
-            <li><a href="#" className="text-[#D39171] hover:text-white transition">Shipping & Delivery</a></li>
-            <li><a href="#" className="text-[#D39171] hover:text-white transition">Returns & Exchanges</a></li>
-            <li><a href="#" className="text-[#D39171] hover:text-white transition">FAQs</a></li>
-            <li><a href="#" className="text-[#D39171] hover:text-white transition">Contact Us</a></li>
-          </ul>
-        </div>
-
-      </div>
-
-      {/* Bottom bar */}
-      <div className="max-w-7xl mx-auto mt-12 pt-8 border-t border-stone-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-stone-500">
-        <p className="text-white">&copy; 2026 LaCrochet. All rights reserved.</p>
-        <div className="flex items-center gap-4 text-stone-400 text-lg">
-          <a href="#" className="hover:text-white transition"><i className="fa-brands fa-instagram" /></a>
-          <a href="#" className="hover:text-white transition"><i className="fa-brands fa-facebook" /></a>
-          <a href="#" className="hover:text-white transition"><i className="fa-brands fa-tiktok" /></a>
-          <a href="#" className="hover:text-white transition"><i className="fa-brands fa-pinterest" /></a>
         </div>
       </div>
     </footer>
-  )
+  );
 }
-
-export default Footer
