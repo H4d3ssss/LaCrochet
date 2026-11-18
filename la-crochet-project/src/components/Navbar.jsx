@@ -1,137 +1,243 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { Link, NavLink, useNavigate } from "react-router";
+import { useAuth } from "../context/AuthContext";
+import { useCart } from "../context/CartContext";
+import { BagIcon, CloseIcon, MenuIcon, SearchIcon, UserIcon } from "./Icons";
 
-import shoppingcart from "../assets/cart/shopping-cart.svg";
-import account from "../assets/gen/account.svg";
-import search from "../assets/gen/search-icon.svg";
-import heart from "../assets/gen/heart.svg";
+const NAV_LINKS = [
+  { label: "Home", to: "/" },
+  { label: "Shop", to: "/catalog" },
+  { label: "About", to: "/about" },
+  { label: "Contact", to: "/contact" },
+];
+
+const navLinkClass = ({ isActive }) =>
+  `rounded-full px-3 py-2 text-sm font-semibold transition-colors ${
+    isActive ? "text-berry" : "text-ink/75 hover:text-ink"
+  }`;
 
 export default function Navbar({ onLoginClick }) {
-  const user = null;
+  const { user, isChecking, logout } = useAuth();
+  // Logging out also empties the cart (see CartContext).
+  const { cartCount } = useCart();
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 shadow-2xs bg-white">
-      <nav className="grid grid-cols-[1fr_auto] items-center gap-4 px-4 py-4 xl:grid-cols-[1fr_auto_1fr] xl:px-12 bg-white text-black font-bold max-w-7xl mx-auto sm:px-6 lg:px-2">
-        <div className="flex items-center gap-4">
-          <Link to="/" className="text-2xl font-bold p-2 font-lora">
-            LaCrochet.
-          </Link>
-        </div>
-        <div className="hidden xl:flex nav-links font-poppins font-light text-sm">
-          <ul className="flex flex-row space-x-4 text-black font-nunito ">
-            <li className="text-black/65 hover:text-black transition-colors">
-              <Link to="/">Home</Link>
-            </li>
-            <li className="text-black/65 hover:text-black transition-colors">
-              <a href="#">Catalog</a>
-            </li>
-            <li className="text-black/65 hover:text-black transition-colors">
-              <a href="#">About</a>
-            </li>
-            <li className="text-black/65 hover:text-black transition-colors">
-              <a href="#">Contact</a>
-            </li>
-          </ul>
-        </div>
-
-        <div className="flex item-center gap-4 justify-self-end">
-          <button
-            type="button"
-            className="cursor-pointer"
-            onClick={() => setSearchOpen((previous) => !previous)}
-          >
-            <img className="w-5 h-5 mx-2" src={search} alt="Search" />
-          </button>
-
-          <button type="button" className="cursor-pointer">
-            <img className="w-5 h-5 mx-2" src={heart} alt="Heart" />
-          </button>
-
-          <div className="flex flex-row space-x-6 items-center text-black">
-            {user ? (
-              <>
-                <a href="#">
-                  <img className="w-7 h-7" src={shoppingcart} alt="Cart" />
-                </a>
-                <a href="#">
-                  <img className="w-7 h-7" src={account} alt="Account" />
-                </a>
-              </>
-            ) : (
-              <>
-                <button
-                  onClick={onLoginClick}
-                  className="cursor-pointer font-normal"
-                >
-                  Login
-                </button>
-              </>
-            )}
-          </div>
-
-          <button type="submit" className="cursor-pointer">
-            <img className="w-6 h-6 mx-4 xl:hidden" src={search} alt="Search" />
-          </button>
-
-          <button
-            type="button"
-            className="flex flex-col gap-1.5 p-2 xl:hidden"
-            onClick={() => setMenuOpen(!menuOpen)}
-            aria-expanded={menuOpen}
-            aria-controls="mobile-menu"
-          >
-            <span className="h-0.5 w-6 bg-black" />
-            <span className="h-0.5 w-6 bg-black" />
-            <span className="h-0.5 w-6 bg-black" />
-          </button>
-        </div>
-      </nav>
-
-      {searchOpen && <SearchBar onClose={() => setSearchOpen(false)} />}
-
-      {menuOpen && (
-        <div
-          id="mobile-menu"
-          className="flex flex-col gap-4 border-t bg-white p-4 items-end xl:hidden"
+    <header className="sticky top-0 z-50">
+      <div className="bg-card">
+        <nav
+          aria-label="Main"
+          className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3 sm:px-6 lg:px-8"
         >
-          {["Home", "Products", "About", "Contact"].map((label) => (
-            <a key={label} href="#" onClick={() => setMenuOpen(false)}>
-              {label}
-            </a>
-          ))}
-        </div>
-      )}
+          <Link to="/" className="font-serif text-2xl font-semibold text-ink">
+            La Crochet
+          </Link>
+
+          <ul className="ml-6 hidden items-center gap-1 md:flex">
+            {NAV_LINKS.map((link) => (
+              <li key={link.to}>
+                <NavLink to={link.to} end={link.to === "/"} className={navLinkClass}>
+                  {link.label}
+                </NavLink>
+              </li>
+            ))}
+          </ul>
+
+          <div className="ml-auto flex items-center gap-1 sm:gap-2">
+            <button
+              type="button"
+              onClick={() => setSearchOpen((open) => !open)}
+              aria-expanded={searchOpen}
+              aria-label="Search products"
+              className="btn-quiet px-2.5"
+            >
+              <SearchIcon />
+            </button>
+
+            {/* Only logged-in customers have a cart. */}
+            {user && (
+              <Link
+                to="/cart"
+                className="btn-quiet relative px-2.5"
+                aria-label={`Cart, ${cartCount} ${cartCount === 1 ? "item" : "items"}`}
+              >
+                <BagIcon />
+                {cartCount > 0 && (
+                  <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-berry px-1 text-[11px] font-bold text-white">
+                    {cartCount}
+                  </span>
+                )}
+              </Link>
+            )}
+
+            {user ? (
+              <AccountMenu user={user} onLogout={logout} />
+            ) : isChecking ? (
+              // Checking a saved login: show nothing for a moment instead of "Log in".
+              <span className="w-20" aria-hidden="true" />
+            ) : (
+              <button type="button" onClick={onLoginClick} className="btn-primary px-5 py-2">
+                Log in
+              </button>
+            )}
+
+            <button
+              type="button"
+              className="btn-quiet px-2.5 md:hidden"
+              onClick={() => setMenuOpen((open) => !open)}
+              aria-expanded={menuOpen}
+              aria-controls="mobile-menu"
+              aria-label={menuOpen ? "Close menu" : "Open menu"}
+            >
+              {menuOpen ? <CloseIcon /> : <MenuIcon />}
+            </button>
+          </div>
+        </nav>
+
+        {searchOpen && <SearchBar onClose={() => setSearchOpen(false)} />}
+
+        {menuOpen && (
+          <ul id="mobile-menu" className="border-t border-line px-4 py-3 md:hidden">
+            {NAV_LINKS.map((link) => (
+              <li key={link.to}>
+                <NavLink
+                  to={link.to}
+                  end={link.to === "/"}
+                  onClick={() => setMenuOpen(false)}
+                  className={({ isActive }) =>
+                    `block rounded-xl px-3 py-3 font-semibold ${
+                      isActive ? "bg-sand text-berry" : "text-ink"
+                    }`
+                  }
+                >
+                  {link.label}
+                </NavLink>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {/* The crochet trim under the Navbar */}
+      <div className="scallop-down" aria-hidden="true" />
     </header>
   );
 }
 
 function SearchBar({ onClose }) {
+  const navigate = useNavigate();
+  const [query, setQuery] = useState("");
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  function handleSubmit(event) {
+    event.preventDefault();
+    const search = query.trim();
+    navigate(search ? `/catalog?${new URLSearchParams({ q: search })}` : "/catalog");
+    onClose();
+  }
+
   return (
-    <div
-      id="search-bar-container"
-      className="border-t border-black/5 bg-[#f7f7f7] px-4 py-4"
+    <form
+      role="search"
+      onSubmit={handleSubmit}
+      className="border-t border-line px-4 py-4 sm:px-6"
+      onKeyDown={(event) => event.key === "Escape" && onClose()}
     >
-      <div className="max-w-3xl mx-auto relative flex items-center">
-        <img src={search} alt="" className="absolute left-4 w-5 h-5" />
-
+      <div className="relative mx-auto flex max-w-2xl items-center">
+        <SearchIcon className="pointer-events-none absolute left-4 h-5 w-5 text-muted" />
         <input
+          ref={inputRef}
           type="search"
-          id="header-search-input"
-          placeholder="Search by product name, category, or color..."
-          className="w-full bg-white border border-brand-100 rounded-lg pl-12 pr-10 py-3 text-sm focus:outline-none focus:border-brand-900 shadow-sm"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Search tote bags, yarn, keychains…"
+          aria-label="Search products"
+          className="input rounded-full py-3 pl-12 pr-28"
         />
-
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close search"
-          className="absolute right-4 text-neutral-400 hover:text-brand-900 cursor-pointer"
-        >
-          ✕
+        <button type="submit" className="btn-primary absolute right-1.5 px-4 py-2">
+          Search
         </button>
       </div>
+    </form>
+  );
+}
+
+function AccountMenu({ user, onLogout }) {
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef(null);
+
+  // Close the menu when clicking anywhere else or pressing Escape.
+  useEffect(() => {
+    if (!open) return;
+    function handleClick(event) {
+      if (!menuRef.current?.contains(event.target)) setOpen(false);
+    }
+    function handleKey(event) {
+      if (event.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    document.addEventListener("keydown", handleKey);
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+      document.removeEventListener("keydown", handleKey);
+    };
+  }, [open]);
+
+  return (
+    <div ref={menuRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        aria-expanded={open}
+        aria-haspopup="menu"
+        className="btn-quiet px-2.5"
+      >
+        <UserIcon />
+        <span className="hidden sm:inline">Hi, {user.first_name}</span>
+      </button>
+
+      {open && (
+        <div
+          role="menu"
+          className="card absolute right-0 top-full z-50 mt-2 w-60 p-2 shadow-lg shadow-ink/10"
+        >
+          <p className="truncate px-3 py-2 text-sm text-muted">{user.email}</p>
+          <Link
+            to="/orders"
+            role="menuitem"
+            onClick={() => setOpen(false)}
+            className="block rounded-xl px-3 py-2.5 text-sm font-semibold hover:bg-sand"
+          >
+            My orders
+          </Link>
+          {user.role === "admin" && (
+            <Link
+              to="/admin"
+              role="menuitem"
+              onClick={() => setOpen(false)}
+              className="block rounded-xl px-3 py-2.5 text-sm font-semibold text-berry hover:bg-sand"
+            >
+              Back office
+            </Link>
+          )}
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              onLogout();
+            }}
+            className="w-full cursor-pointer rounded-xl px-3 py-2.5 text-left text-sm font-semibold hover:bg-sand"
+          >
+            Log out
+          </button>
+        </div>
+      )}
     </div>
   );
 }

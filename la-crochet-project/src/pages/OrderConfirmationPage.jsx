@@ -1,113 +1,174 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
-import CheckLogin from "../components/auth/CheckLogin";
-import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
-
-const formatPrice = (amount) =>
-  new Intl.NumberFormat("en-PH", {
-    style: "currency",
-    currency: "PHP",
-  }).format(amount);
-
-// Temporary preview data; replace with the successful order response.
-const order = {
-  orderNumber: "LC-2026-0001",
-  shippingMethod: "Home delivery",
-  paymentMethod: "Cash on delivery",
-  items: [
-    { id: 1, name: "Dishie Yarn", price: 250, quantity: 1 },
-    { id: 2, name: "Brava Worsted Yarn", price: 180, quantity: 2 },
-  ],
-  subtotal: 610,
-  shipping: 90,
-};
+import { useEffect, useState } from "react";
+import { Link, useSearchParams } from "react-router";
+import { getOrder, PENDING_ORDER_KEY } from "../api/orders";
+import { CheckIcon, CloseIcon } from "../components/Icons";
+import PageLayout from "../components/PageLayout";
+import { useAuth } from "../context/AuthContext";
+import { useCart } from "../context/CartContext";
+import { formatDate, formatPrice } from "../utils/format";
+import { orderStatus, paymentText } from "../utils/orderStatus";
 
 export default function OrderConfirmationPage() {
-  const [showLogin, setShowLogin] = useState(false);
-  const grandTotal = order.subtotal + order.shipping;
+  const [searchParams] = useSearchParams();
+  const orderNumber = searchParams.get("order");
+  const token = searchParams.get("token");
+
+  const { refreshCart } = useCart();
+  const { user } = useAuth();
+  const [order, setOrder] = useState(null);
+  const [error, setError] = useState("");
+  const [justPlaced, setJustPlaced] = useState(false);
+
+  useEffect(() => {
+    if (!orderNumber || !token) {
+      setError("This order link is incomplete.");
+      return;
+    }
+
+    let ignore = false;
+    getOrder(orderNumber, token)
+      .then((data) => {
+        if (ignore) return;
+        setOrder(data);
+
+        // The server empties the cart once the order is placed or paid,
+        // so just reload it to update the cart badge.
+        if (sessionStorage.getItem(PENDING_ORDER_KEY) === data.order_number) {
+          setJustPlaced(true);
+          refreshCart();
+          sessionStorage.removeItem(PENDING_ORDER_KEY);
+        }
+      })
+      .catch((err) => {
+        if (!ignore) setError(err.message);
+      });
+
+    return () => {
+      ignore = true;
+    };
+    // refreshCart is left out on purpose: we only want this to run once per order.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderNumber, token]);
+
+  if (error) {
+    return (
+      <PageLayout>
+        <div className="card px-6 py-14 text-center">
+          <h1 className="text-2xl font-semibold">{error}</h1>
+          <p className="mt-2 text-muted">Check the link, or find the order in My orders.</p>
+          <Link to={user ? "/orders" : "/"} className="btn-primary mt-6">
+            {user ? "Go to My orders" : "Back to home"}
+          </Link>
+        </div>
+      </PageLayout>
+    );
+  }
+
+  if (!order) {
+    return (
+      <PageLayout>
+        <p className="py-20 text-center text-muted">Loading your order…</p>
+      </PageLayout>
+    );
+  }
+
+  const cancelled = order.order_status === "cancelled";
+  const status = orderStatus(order.order_status);
 
   return (
-    <>
-      <Navbar onLoginClick={() => setShowLogin(true)} />
+    <PageLayout>
+      {/* ---- What happened ---- */}
+      <section className="text-center">
+        <span
+          aria-hidden="true"
+          className={`mx-auto flex h-14 w-14 items-center justify-center rounded-full ${
+            cancelled ? "bg-sand text-muted" : "bg-berry text-white"
+          }`}
+        >
+          {cancelled ? <CloseIcon /> : <CheckIcon className="h-7 w-7" />}
+        </span>
 
-      <main className="min-h-screen bg-[#FFE6D9] px-4 py-12 text-[#3E302A] sm:px-6">
-        <div className="mx-auto max-w-3xl">
-          <section className="rounded-[24px] bg-white/80 p-6 text-center shadow-sm sm:p-10">
-            <div
-              aria-hidden="true"
-              className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-[#A90000] text-3xl text-white"
-            >
-              ✓
-            </div>
+        <h1 className="mt-5 font-serif text-3xl font-semibold sm:text-4xl">
+          {cancelled
+            ? "This order was cancelled"
+            : justPlaced
+              ? `Thank you, ${order.customer_name.split(" ")[0]}!`
+              : `Order ${order.order_number}`}
+        </h1>
+        <p className="mx-auto mt-3 max-w-md text-muted">
+          {cancelled
+            ? "The payment wasn't completed, so nothing was charged."
+            : justPlaced
+              ? `Your order is in. We'll send updates to ${order.email}.`
+              : `Placed ${formatDate(order.created_at)}`}
+        </p>
+      </section>
 
-            <h1 className="font-lora text-3xl font-bold">
-              Thank you for your order!
-            </h1>
-            <p className="mt-2 text-[#776B64]">
-              Your order has been placed successfully.
-            </p>
-            <p className="mt-4 font-semibold">
-              Order number: {order.orderNumber}
-            </p>
-
-            <div className="mt-8 border-t border-[#D9C9C0] pt-6 text-left">
-              <h2 className="mb-4 font-lora text-xl font-bold">
-                Order summary
-              </h2>
-
-              <div className="divide-y divide-[#E8DDD7]">
-                {order.items.map((item) => (
-                  <div key={item.id} className="flex justify-between gap-4 py-3">
-                    <span>
-                      {item.name} <span className="text-[#776B64]">× {item.quantity}</span>
-                    </span>
-                    <span className="font-medium">
-                      {formatPrice(item.price * item.quantity)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-
-              <dl className="mt-4 space-y-3 border-t border-[#D9C9C0] pt-4 text-sm">
-                <div className="flex justify-between">
-                  <dt>Subtotal</dt>
-                  <dd>{formatPrice(order.subtotal)}</dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt>Shipping</dt>
-                  <dd>{formatPrice(order.shipping)}</dd>
-                </div>
-                <div className="flex justify-between border-t border-[#D9C9C0] pt-3 font-bold">
-                  <dt>Grand total</dt>
-                  <dd>{formatPrice(grandTotal)}</dd>
-                </div>
-              </dl>
-            </div>
-
-            <div className="mt-6 rounded-2xl bg-[#F7F1ED] p-4 text-left text-sm">
-              <p>
-                <span className="font-semibold">Delivery:</span>{" "}
-                {order.shippingMethod}
-              </p>
-              <p className="mt-2">
-                <span className="font-semibold">Payment:</span>{" "}
-                {order.paymentMethod}
-              </p>
-            </div>
-
-            <Link
-              to="/"
-              className="mt-8 inline-block rounded-2xl bg-[#A90000] px-6 py-3 font-bold text-white hover:bg-[#870000]"
-            >
-              Back to Home
-            </Link>
-          </section>
+      {/* ---- The order ---- */}
+      <section className="card mt-10 p-6 sm:p-8">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-xl font-semibold">{order.order_number}</h2>
+          <span className={`rounded-full px-3 py-1 text-xs font-bold ${status.className}`}>
+            {status.label}
+          </span>
         </div>
-      </main>
 
-      <Footer />
-      <CheckLogin showLogin={showLogin} setShowLogin={setShowLogin} />
-    </>
+        <ul className="mt-5 divide-y divide-line">
+          {order.items.map((item, index) => (
+            <li key={index} className="flex justify-between gap-4 py-3">
+              <span>
+                {item.product_name} <span className="text-muted">× {item.quantity}</span>
+              </span>
+              <span className="font-semibold">{formatPrice(item.line_total)}</span>
+            </li>
+          ))}
+        </ul>
+
+        <dl className="mt-2 space-y-2 border-t border-line pt-4 text-sm">
+          <div className="flex justify-between">
+            <dt className="text-muted">Subtotal</dt>
+            <dd>{formatPrice(order.subtotal)}</dd>
+          </div>
+          <div className="flex justify-between">
+            <dt className="text-muted">Shipping</dt>
+            <dd>{order.shipping_fee > 0 ? formatPrice(order.shipping_fee) : "Free"}</dd>
+          </div>
+          <div className="flex justify-between border-t border-line pt-3 text-base font-bold">
+            <dt>Total</dt>
+            <dd>{formatPrice(order.total)}</dd>
+          </div>
+        </dl>
+
+        <dl className="mt-6 grid gap-4 rounded-xl bg-cream p-4 text-sm sm:grid-cols-2">
+          <div>
+            <dt className="font-bold">
+              {order.shipping_method === "delivery" ? "Delivering to" : "Store pickup"}
+            </dt>
+            <dd className="mt-0.5 text-muted">
+              {order.shipping_method === "delivery"
+                ? [order.ship_street, order.ship_barangay, order.ship_city, order.ship_province, order.ship_postal_code]
+                    .filter(Boolean)
+                    .join(", ")
+                : "We'll text you when it's ready to collect."}
+            </dd>
+          </div>
+          <div>
+            <dt className="font-bold">Payment</dt>
+            <dd className="mt-0.5 text-muted">{paymentText(order)}</dd>
+          </div>
+        </dl>
+      </section>
+
+      <div className="mt-8 flex flex-wrap justify-center gap-3">
+        <Link to={cancelled ? "/cart" : "/catalog"} className="btn-primary">
+          {cancelled ? "Back to cart" : "Keep shopping"}
+        </Link>
+        {user && (
+          <Link to="/orders" className="btn-secondary">
+            My orders
+          </Link>
+        )}
+      </div>
+    </PageLayout>
   );
 }

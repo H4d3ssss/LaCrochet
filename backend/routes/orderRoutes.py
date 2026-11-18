@@ -1,0 +1,286 @@
+import os
+import uuid
+from decimal import ROUND_HALF_UP, Decimal
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from payrex import Client as PayrexClient
+from sqlalchemy.orm import Session
+
+from auth import get_current_user
+from database import get_db
+from models.orderModel import Order, OrderItem
+from models.productModel import Product
+from models.userModel import User
+from routes.cartRoutes import clear_cart
+from schemas.orderSchemas import MyOrderOut, OrderCreate, OrderCreated, OrderOut
+
+router = APIRouter()
+
+# Keep in sync with DELIVERY_FEE in CheckoutPage.jsx and Cart.jsx.
+DELIVERY_FEE = Decimal("90.00")
+PAYREX_METHODS = ["gcash", "card", "maya", "qrph"]
+ORDER_NOT_FOUND = "Order not found."
+
+
+def _frontend_url() -> str:
+    return os.getenv("FRONTEND_URL", "http://localhost:5173").rstrip("/")
+
+
+def _payrex():
+    secret_key = os.getenv("PAYREX_API_SECRET")
+    return PayrexClient(secret_key) if secret_key else None
+
+
+def _centavos(amount: Decimal) -> int:
+    """PayRex wants amounts in centavos: ₱450.00 → 45000."""
+    return int((amount * 100).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+
+
+def _find_order(db: Session, order_number: str, token: str, lock: bool = False) -> Order:
+    """Find an order only if the secret token matches; otherwise say 'not found'."""
+    try:
+        token_uuid = uuid.UUID(token)
+    except (ValueError, TypeError):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, ORDER_NOT_FOUND)
+
+    query = db.query(Order).filter(
+        Order.order_number == order_number, Order.access_token == token_uuid
+    )
+    if lock:
+        query = query.with_for_update()
+    order = query.first()
+    if order is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, ORDER_NOT_FOUND)
+    return order
+
+
+def _cancel_and_restock(db: Session, order: Order) -> None:
+    """Cancel an unpaid order and put its items back in stock."""
+    order.order_status = "cancelled"
+    for item in order.items:
+        if item.product_id is not None:
+            db.query(Product).filter(Product.product_id == item.product_id).update(
+                {Product.stock_qty: Product.stock_qty + item.quantity}
+            )
+
+
+# ---------------------------------------------------------------------
+# Place an order (cash on delivery or online payment)
+# ---------------------------------------------------------------------
+@router.post("/orders", response_model=OrderCreated, status_code=status.HTTP_201_CREATED)
+def create_order(
+    payload: OrderCreate,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),  # must be logged in
+):
+    # Same product added twice? Add the quantities together.
+    quantities: dict[int, int] = {}
+    for item in payload.items:
+        quantities[item.id] = quantities.get(item.id, 0) + item.quantity
+
+    # Lock these product rows so two shoppers can't buy the last item at once.
+    products = (
+        db.query(Product)
+        .filter(Product.product_id.in_(quantities), Product.is_active.is_(True))
+        .with_for_update()
+        .all()
+    )
+    products_by_id = {product.product_id: product for product in products}
+
+    missing = [str(pid) for pid in quantities if pid not in products_by_id]
+    if missing:
+        db.rollback()
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "Some items in your cart are no longer available. Please remove them and try again.",
+        )
+
+    for product_id, quantity in quantities.items():
+        product = products_by_id[product_id]
+        if quantity > product.stock_qty:
+            db.rollback()
+            left = f"Only {product.stock_qty} left" if product.stock_qty > 0 else "Sold out"
+            raise HTTPException(
+                status.HTTP_409_CONFLICT, f"{left} of {product.name}. Please update your cart."
+            )
+
+    # Prices always come from the database, never from the browser.
+    subtotal = sum(
+        (Decimal(products_by_id[pid].price) * qty for pid, qty in quantities.items()),
+        Decimal("0"),
+    )
+    shipping_fee = DELIVERY_FEE if payload.shipping_method == "delivery" else Decimal("0")
+    address = payload.shipping_address
+
+    order = Order(
+        user_id=user.user_id,
+        customer_name=payload.customer_name,
+        email=payload.email,
+        phone=payload.phone,
+        shipping_method=payload.shipping_method,
+        ship_street=address.street if address else None,
+        ship_barangay=address.barangay if address else None,
+        ship_city=address.city if address else None,
+        ship_province=address.province if address else None,
+        ship_postal_code=address.postal_code if address else None,
+        ship_country=address.country if address else None,
+        payment_method=payload.payment_method,
+        subtotal=subtotal,
+        shipping_fee=shipping_fee,
+        total=subtotal + shipping_fee,
+    )
+
+    for product_id, quantity in quantities.items():
+        product = products_by_id[product_id]
+        order.items.append(
+            OrderItem(
+                product_id=product_id,
+                product_name=product.name,
+                unit_price=product.price,
+                quantity=quantity,
+            )
+        )
+        product.stock_qty -= quantity  # reserve the stock
+
+    db.add(order)
+    db.flush()  # the database fills in order_number and access_token here
+
+    checkout_url = None
+    if payload.payment_method == "online":
+        payrex = _payrex()
+        if payrex is None:
+            db.rollback()
+            raise HTTPException(
+                status.HTTP_500_INTERNAL_SERVER_ERROR,
+                "Online payment isn't set up yet (PAYREX_API_SECRET is missing).",
+            )
+
+        link = f"order={order.order_number}&token={order.access_token}"
+        line_items = [
+            {"name": item.product_name, "amount": _centavos(Decimal(item.unit_price)),
+             "quantity": item.quantity}
+            for item in order.items
+        ]
+        if shipping_fee > 0:
+            line_items.append(
+                {"name": "Home delivery", "amount": _centavos(shipping_fee), "quantity": 1}
+            )
+
+        try:
+            session = payrex.checkout_sessions.create(
+                {
+                    "currency": "PHP",
+                    "success_url": f"{_frontend_url()}/order-confirmation?{link}",
+                    "cancel_url": f"{_frontend_url()}/checkout?payment=cancelled&{link}",
+                    "payment_methods": PAYREX_METHODS,
+                    "line_items": line_items,
+                    "description": f"La Crochet order {order.order_number}",
+                }
+            )
+        except Exception as exc:
+            db.rollback()
+            raise HTTPException(
+                status.HTTP_502_BAD_GATEWAY,
+                "PayRex could not start the payment. Please try again or choose cash on delivery.",
+            ) from exc
+
+        if not getattr(session, "url", None):
+            db.rollback()
+            raise HTTPException(status.HTTP_502_BAD_GATEWAY, "PayRex did not return a payment page.")
+
+        order.payrex_checkout_session_id = session.id
+        checkout_url = session.url
+    else:
+        # Cash on delivery / pay at pickup: the order is placed, so empty the cart.
+        clear_cart(db, user.user_id)
+
+    db.commit()
+
+    return OrderCreated(
+        order_number=order.order_number,
+        access_token=str(order.access_token),
+        checkout_url=checkout_url,
+    )
+
+
+# ---------------------------------------------------------------------
+# "My Orders": every order placed by the logged-in customer, newest first
+# ---------------------------------------------------------------------
+@router.get("/orders", response_model=list[MyOrderOut])
+def my_orders(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    return (
+        db.query(Order)
+        .filter(Order.user_id == user.user_id)
+        .order_by(Order.created_at.desc(), Order.order_id.desc())
+        .all()
+    )
+
+
+# ---------------------------------------------------------------------
+# Order confirmation page
+# ---------------------------------------------------------------------
+@router.get("/orders/{order_number}", response_model=OrderOut)
+def get_order(order_number: str, token: str, db: Session = Depends(get_db)):
+    order = _find_order(db, order_number, token, lock=True)
+
+    # Online order not marked paid yet? Ask PayRex how the payment went.
+    payrex = _payrex()
+    if (
+        payrex is not None
+        and order.payment_method == "online"
+        and order.payment_status == "unpaid"
+        and order.order_status == "pending"
+        and order.payrex_checkout_session_id
+    ):
+        try:
+            session = payrex.checkout_sessions.retrieve(order.payrex_checkout_session_id)
+            if session.status == "completed":
+                order.payment_status = "paid"
+                order.order_status = "processing"
+                if order.user_id is not None:
+                    clear_cart(db, order.user_id)  # paid: empty their cart
+            elif session.status == "expired":
+                _cancel_and_restock(db, order)
+        except Exception:
+            pass  # PayRex unreachable: show the order as it is, check again next time
+
+    db.commit()
+    db.refresh(order)
+    return order
+
+
+# ---------------------------------------------------------------------
+# Customer pressed "back/cancel" on the PayRex page
+# ---------------------------------------------------------------------
+@router.post("/orders/{order_number}/cancel", response_model=OrderOut)
+def cancel_unpaid_order(order_number: str, token: str, db: Session = Depends(get_db)):
+    order = _find_order(db, order_number, token, lock=True)
+
+    # Only unpaid online orders that haven't started can be cancelled this way.
+    if (
+        order.payment_method == "online"
+        and order.payment_status == "unpaid"
+        and order.order_status == "pending"
+    ):
+        payrex = _payrex()
+        if payrex is not None and order.payrex_checkout_session_id:
+            try:
+                session = payrex.checkout_sessions.retrieve(order.payrex_checkout_session_id)
+                if session.status == "completed":
+                    # They actually paid — don't cancel.
+                    order.payment_status = "paid"
+                    order.order_status = "processing"
+                    if order.user_id is not None:
+                        clear_cart(db, order.user_id)
+                    db.commit()
+                    db.refresh(order)
+                    return order
+                if session.status == "active":
+                    payrex.checkout_sessions.expire(order.payrex_checkout_session_id)
+            except Exception:
+                pass
+        _cancel_and_restock(db, order)
+
+    db.commit()
+    db.refresh(order)
+    return order

@@ -1,176 +1,174 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import {
+  addCartItem,
+  emptyCart,
+  getCart,
+  removeCartItem,
+  setCartItemQuantity,
+} from "../api/cart";
+import { useAuth } from "./AuthContext";
 
 const CartContext = createContext(null);
-const STORAGE_KEY = "lacrochet-cart";
-const MAX_QUANTITY = 99;
+const OLD_STORAGE_KEY = "lacrochet-cart"; // carts used to live in the browser
+const EMPTY_CART = { items: [], count: 0, subtotal: 0 };
 
 function getProductId(product) {
   return product?.id ?? product?.product_id ?? product?.productId;
 }
 
-function sameId(firstId, secondId) {
-  return String(firstId) === String(secondId);
-}
-
-function getSavedCart() {
-  try {
-    const savedCart = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-
-    if (!Array.isArray(savedCart)) {
-      return [];
-    }
-
-    return savedCart.flatMap((item) => {
-      if (!item || typeof item !== "object") {
-        return [];
-      }
-
-      const nestedProduct = item.product ?? {};
-      const id =
-        getProductId(item) ??
-        getProductId(nestedProduct);
-
-      const name =
-        item.name ??
-        nestedProduct.name ??
-        nestedProduct.product_name;
-
-      const price = Number(item.price ?? nestedProduct.price);
-      const quantity = Number(item.quantity);
-
-      // Discard old or incomplete entries that cannot be sent to checkout.
-      if (
-        id == null ||
-        !Number.isFinite(price) ||
-        !Number.isFinite(quantity)
-      ) {
-        return [];
-      }
-
-      return [
-        {
-          id,
-          name: name ?? "Product",
-          image: item.image ?? nestedProduct.image ?? null,
-          price,
-          quantity: Math.min(
-            MAX_QUANTITY,
-            Math.max(1, Math.floor(quantity))
-          ),
-        },
-      ];
-    });
-  } catch {
-    return [];
-  }
+// Server shape → the shape the pages already use.
+function toCart(data) {
+  return {
+    items: data.items.map((line) => ({
+      id: line.product_id,
+      name: line.name,
+      image: line.image_url,
+      price: line.price,
+      quantity: line.quantity,
+      stockQty: line.stock_qty,
+      available: line.available,
+    })),
+    count: data.count,
+    subtotal: data.subtotal,
+  };
 }
 
 export function CartProvider({ children }) {
-  const [cartItems, setCartItems] = useState(getSavedCart);
+  const { user, token, requestLogin } = useAuth();
+  const [cart, setCart] = useState(EMPTY_CART);
+  const [isLoading, setIsLoading] = useState(false);
+  const [cartError, setCartError] = useState("");
 
+  // Item a guest clicked before logging in; added as soon as they log in.
+  const pendingAddRef = useRef(null);
+
+  // Carts now live in the database: clear the old browser copy once.
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(cartItems));
-  }, [cartItems]);
+    try {
+      localStorage.removeItem(OLD_STORAGE_KEY);
+    } catch {
+      // Storage unavailable; nothing to clean up.
+    }
+  }, []);
 
-  function addToCart(product, quantity = 1) {
-    const productId = getProductId(product);
+  const applyCart = useCallback((data) => {
+    setCart(toCart(data));
+    setCartError("");
+  }, []);
 
-    if (productId == null) {
-      console.error("Cannot add product without an ID:", product);
+  // Load the logged-in customer's cart (and finish a pending "Add to Cart").
+  // Logged out → empty cart.
+  useEffect(() => {
+    if (!user || !token) {
+      setCart(EMPTY_CART);
       return;
     }
 
-    const price = Number(product.price);
+    let ignore = false;
+    const pending = pendingAddRef.current;
+    pendingAddRef.current = null;
 
-    if (!Number.isFinite(price)) {
-      console.error("Cannot add product with an invalid price:", product);
-      return;
-    }
+    setIsLoading(true);
+    const load = pending
+      ? addCartItem(token, pending.productId, pending.quantity).catch((error) => {
+          // Couldn't add it (e.g. sold out): still show their cart, plus why.
+          if (!ignore) setCartError(error.message);
+          return getCart(token);
+        })
+      : getCart(token);
 
-    const amount = Math.min(
-      MAX_QUANTITY,
-      Math.max(1, Math.floor(Number(quantity) || 1))
-    );
+    load
+      .then((data) => {
+        if (!ignore) setCart(toCart(data));
+      })
+      .catch((error) => {
+        if (!ignore) setCartError(error.message);
+      })
+      .finally(() => {
+        if (!ignore) setIsLoading(false);
+      });
 
-    const cartProduct = {
-      id: productId,
-      name: product.name ?? product.product_name ?? "Product",
-      image: product.image ?? product.image_url ?? null,
-      price,
-      quantity: amount,
+    return () => {
+      ignore = true;
     };
+  }, [user, token]);
 
-    setCartItems((items) => {
-      // Also remove any invalid entries left in the current in-memory cart.
-      const validItems = items.filter((item) => item?.id != null);
-      const existingItem = validItems.find((item) =>
-        sameId(item.id, productId)
-      );
+  const refreshCart = useCallback(async () => {
+    if (!token) return;
+    try {
+      applyCart(await getCart(token));
+    } catch (error) {
+      setCartError(error.message);
+    }
+  }, [token, applyCart]);
 
-      if (existingItem) {
-        return validItems.map((item) =>
-          sameId(item.id, productId)
-            ? {
-                ...item,
-                quantity: Math.min(
-                  MAX_QUANTITY,
-                  item.quantity + amount
-                ),
-              }
-            : item
-        );
-      }
+  // Returns { ok: true } if added. Guests get the login popup instead,
+  // and the item is added right after they log in.
+  async function addToCart(product, quantity = 1) {
+    const productId = getProductId(product);
+    const amount = Math.max(1, Math.floor(Number(quantity) || 1));
 
-      return [...validItems, cartProduct];
-    });
+    if (!user) {
+      requestLogin(() => {
+        pendingAddRef.current = { productId, quantity: amount };
+      });
+      return { ok: false, needsLogin: true };
+    }
+
+    try {
+      applyCart(await addCartItem(token, productId, amount));
+      return { ok: true };
+    } catch (error) {
+      return { ok: false, error: error.message };
+    }
   }
 
-  function changeQuantity(productId, amount) {
-    setCartItems((items) =>
-      items.map((item) =>
-        sameId(item.id, productId)
-          ? {
-              ...item,
-              quantity: Math.min(
-                MAX_QUANTITY,
-                Math.max(1, item.quantity + (Number(amount) || 0))
-              ),
-            }
-          : item
-      )
-    );
+  async function changeQuantity(productId, amount) {
+    const item = cart.items.find((line) => line.id === productId);
+    if (!item) return;
+    const quantity = item.quantity + amount;
+    if (quantity < 1) return;
+
+    try {
+      applyCart(await setCartItemQuantity(token, productId, quantity));
+    } catch (error) {
+      setCartError(error.message);
+    }
   }
 
-  function removeFromCart(productId) {
-    setCartItems((items) =>
-      items.filter((item) => !sameId(item.id, productId))
-    );
+  async function removeFromCart(productId) {
+    try {
+      applyCart(await removeCartItem(token, productId));
+    } catch (error) {
+      setCartError(error.message);
+    }
   }
 
-  function clearCart() {
-    setCartItems([]);
+  async function clearCart() {
+    if (!token) {
+      setCart(EMPTY_CART);
+      return;
+    }
+    try {
+      applyCart(await emptyCart(token));
+    } catch (error) {
+      setCartError(error.message);
+    }
   }
-
-  const cartCount = cartItems.reduce(
-    (sum, item) => sum + item.quantity,
-    0
-  );
-
-  const subtotal = cartItems.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
-  );
 
   return (
     <CartContext.Provider
       value={{
-        cartItems,
-        cartCount,
-        subtotal,
+        cartItems: cart.items,
+        cartCount: cart.count,
+        subtotal: cart.subtotal,
+        isLoading,
+        cartError,
         addToCart,
         changeQuantity,
         removeFromCart,
         clearCart,
+        refreshCart,
       }}
     >
       {children}

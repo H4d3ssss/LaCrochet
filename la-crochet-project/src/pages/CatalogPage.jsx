@@ -1,296 +1,204 @@
-import { useEffect, useState } from "react";
-import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
-import ProductCard from "../components/catalog/ProductCard";
-import CheckLogin from "../components/auth/CheckLogin";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router";
+import { getCategories, getProducts } from "../api/products";
+import ProductCard, { ProductCardSkeleton } from "../components/catalog/ProductCard";
+import { SearchIcon } from "../components/Icons";
+import PageLayout from "../components/PageLayout";
 import { useCart } from "../context/CartContext";
 
+const SORTS = {
+  featured: { label: "Featured", compare: (a, b) => b.is_featured - a.is_featured || a.product_id - b.product_id },
+  newest: { label: "Newest", compare: (a, b) => b.product_id - a.product_id },
+  "price-low": { label: "Price: low to high", compare: (a, b) => a.price - b.price },
+  "price-high": { label: "Price: high to low", compare: (a, b) => b.price - a.price },
+  name: { label: "Name: A to Z", compare: (a, b) => a.name.localeCompare(b.name) },
+};
+
 export default function CatalogPage() {
-  const [products, setProducts] = useState([]);
   const { addToCart } = useCart();
+  const [products, setProducts] = useState(null); // null = loading
+  const [categories, setCategories] = useState([]);
+  const [error, setError] = useState("");
 
-  useEffect(() => {
-    async function loadProducts() {
-      try {
-        const response = await fetch("http://localhost:8000/api/products");
+  // Filters live in the address (/catalog?category=yarn-and-fibers&sort=price-low&q=tote),
+  // so links from the Footer and the search box work, and Back keeps your filters.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const categorySlug = searchParams.get("category") ?? "all";
+  const sortKey = SORTS[searchParams.get("sort")] ? searchParams.get("sort") : "featured";
+  const query = searchParams.get("q") ?? "";
 
-        if (!response.ok) {
-          throw new Error("Failed to load products");
-        }
-        const data = await response.json();
+  function updateParam(name, value, defaultValue) {
+    const next = new URLSearchParams(searchParams);
+    if (!value || value === defaultValue) next.delete(name);
+    else next.set(name, value);
+    setSearchParams(next, { replace: true });
+  }
 
-        console.log("Fetched products:", data);
-        console.table(data);
-
-        setProducts(data);
-      } catch (error) {
-        console.error("Error loading products:", error);
-      }
-    }
-
-    loadProducts();
+  const load = useCallback(() => {
+    setError("");
+    setProducts(null);
+    Promise.all([getProducts(), getCategories()])
+      .then(([productData, categoryData]) => {
+        setProducts(productData);
+        setCategories(categoryData);
+      })
+      .catch((err) => setError(err.message));
   }, []);
 
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const activeCategory = categories.find((category) => category.slug === categorySlug);
+
+  const visibleProducts = useMemo(() => {
+    if (!products) return [];
+    const words = query.trim().toLowerCase();
+    return products
+      .filter((product) => !activeCategory || product.category_id === activeCategory.category_id)
+      .filter(
+        (product) =>
+          !words ||
+          product.name.toLowerCase().includes(words) ||
+          product.description.toLowerCase().includes(words)
+      )
+      .sort(SORTS[sortKey].compare);
+  }, [products, activeCategory, query, sortKey]);
+
+  const hasFilters = categorySlug !== "all" || query;
+
   return (
-    <>
-      <div className="bg-black/95 text-white text-xs tracking-widest text-center py-2 px-4 uppercase font-poppins">
-        <p>
-          Complimentary worldwide shipping on orders over $150 &mdash;
-          Minimalist Design No. 04
-        </p>
-      </div>
-      <Navbar onLoginClick={() => setShowLogin(true)} />
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div className="mb-8 border-b border-brand-100 pb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
-          <div>
-            <nav className="text-xs text-neutral-400 uppercase tracking-widest mb-2">
-              Home / Catalog / All Objects
-            </nav>
-            <h1 className="text-3xl font-light tracking-tight">
-              The Monolithic Collection
-            </h1>
-            <p className="text-sm text-neutral-500 mt-1">
-              Refined everyday essentials designed with uncompromising
-              minimalism.
-            </p>
-          </div>
-
-          <div className="flex items-center space-x-4">
-            <button
-              id="mobile-filter-toggle"
-              className="lg:hidden flex items-center space-x-2 border border-brand-200 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-brand-50 transition-colors"
-            >
-              <i data-lucide="sliders-horizontal" className="w-4 h-4"></i>
-              <span>Filters</span>
-            </button>
-            <div className="flex items-center space-x-2 text-sm text-neutral-600">
-              <span className="hidden sm:inline">Sort by:</span>
-              <select
-                id="sort-select"
-                className="bg-white border border-brand-200 rounded-lg px-3 py-2 text-sm font-medium focus:outline-none focus:border-brand-900"
-              >
-                <option value="featured">Featured</option>
-                <option value="price-low">Price: Low to High</option>
-                <option value="price-high">Price: High to Low</option>
-                <option value="name">Name: A-Z</option>
-              </select>
-            </div>
-          </div>
+    <PageLayout width="wide">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="page-title">{activeCategory ? activeCategory.name : "Shop all"}</h1>
+          <p className="mt-1 text-muted">
+            {products === null
+              ? "Loading products…"
+              : `${visibleProducts.length} ${visibleProducts.length === 1 ? "product" : "products"}${
+                  query ? ` matching “${query}”` : ""
+                }`}
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-10 items-start">
-          <aside
-            id="filter-sidebar"
-            className="fixed inset-y-0 left-0 z-50 w-80 bg-white shadow-2xl p-6 overflow-y-auto transform -translate-x-full lg:translate-x-0 lg:static lg:z-0 lg:w-auto lg:shadow-none lg:p-0 lg:block transition-transform duration-300"
+        <div className="flex w-full flex-wrap gap-3 sm:w-auto">
+          <form
+            role="search"
+            onSubmit={(event) => event.preventDefault()}
+            className="relative min-w-0 flex-1 sm:w-64 sm:flex-none"
           >
-            <div className="flex items-center justify-between pb-4 border-b border-brand-100 lg:hidden">
-              <h2 className="text-lg font-medium">Filters</h2>
-              <button
-                id="close-filter-sidebar"
-                className="p-2 text-neutral-500 hover:text-brand-900"
-              >
-                <i data-lucide="x" className="w-5 h-5"></i>
-              </button>
-            </div>
+            <SearchIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+            <input
+              type="search"
+              value={query}
+              onChange={(event) => updateParam("q", event.target.value, "")}
+              placeholder="Search products"
+              aria-label="Search products"
+              className="input rounded-full pl-10"
+            />
+          </form>
 
-            <div className="space-y-8 mt-6 lg:mt-0">
-              <div>
-                <h3 className="text-xs font-semibold uppercase tracking-widest text-neutral-400 mb-4">
-                  Categories
-                </h3>
-                <div id="category-filters" className="space-y-2 text-sm">
-                  <label className="flex items-center space-x-3 cursor-pointer group">
-                    <input
-                      type="checkbox"
-                      name="category"
-                      value="all"
-                      defaultChecked
-                      className="rounded border-brand-300 text-brand-900 focus:ring-0 w-4 h-4"
-                    />
-                    <span className="group-hover:text-black text-neutral-600">
-                      All Categories
-                    </span>
-                  </label>
-                  <label className="flex items-center space-x-3 cursor-pointer group">
-                    <input
-                      type="checkbox"
-                      name="category"
-                      value="Apparel"
-                      className="rounded border-brand-300 text-brand-900 focus:ring-0 w-4 h-4"
-                    />
-                    <span className="group-hover:text-black text-neutral-600">
-                      Apparel
-                    </span>
-                  </label>
-                  <label className="flex items-center space-x-3 cursor-pointer group">
-                    <input
-                      type="checkbox"
-                      name="category"
-                      value="Footwear"
-                      className="rounded border-brand-300 text-brand-900 focus:ring-0 w-4 h-4"
-                    />
-                    <span className="group-hover:text-black text-neutral-600">
-                      Sewing, Knitting & Crochet
-                    </span>
-                  </label>
-                  <label className="flex items-center space-x-3 cursor-pointer group">
-                    <input
-                      type="checkbox"
-                      name="category"
-                      value="Accessories"
-                      className="rounded border-brand-300 text-brand-900 focus:ring-0 w-4 h-4"
-                    />
-                    <span className="group-hover:text-black text-neutral-600">
-                      Accessories
-                    </span>
-                  </label>
-                  <label className="flex items-center space-x-3 cursor-pointer group">
-                    <input
-                      type="checkbox"
-                      name="category"
-                      value="Objects"
-                      className="rounded border-brand-300 text-brand-900 focus:ring-0 w-4 h-4"
-                    />
-                    <span className="group-hover:text-black text-neutral-600">
-                      Objects & Lanyards
-                    </span>
-                  </label>
-                  <label className="flex items-center space-x-3 cursor-pointer group">
-                    <input
-                      type="checkbox"
-                      name="category"
-                      value="Objects"
-                      className="rounded border-brand-300 text-brand-900 focus:ring-0 w-4 h-4"
-                    />
-                    <span className="group-hover:text-black text-neutral-600">
-                      Cutting Tools
-                    </span>
-                  </label>
-                </div>
-              </div>
-
-              <div className="border-t border-brand-100 pt-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xs font-semibold uppercase tracking-widest text-neutral-400">
-                    Max Price
-                  </h3>
-                  <span
-                    id="price-output"
-                    className="text-xs font-medium bg-brand-100 px-2 py-1 rounded"
-                  >
-                    $500
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  id="price-range-slider"
-                  min="50"
-                  max="500"
-                  step="10"
-                  defaultValue="500"
-                  className="w-full accent-brand-900 cursor-pointer"
-                />
-                <div className="flex justify-between text-[11px] text-neutral-400 mt-2">
-                  <span>$50</span>
-                  <span>$500</span>
-                </div>
-              </div>
-
-              <div className="border-t border-brand-100 pt-6">
-                <h3 className="text-xs font-semibold uppercase tracking-widest text-neutral-400 mb-4">
-                  Colorway
-                </h3>
-                <div id="color-filters" className="flex flex-wrap gap-2">
-                  <button
-                    data-color="Black"
-                    className="w-7 h-7 rounded-full bg-neutral-900 border-2 border-transparent focus:outline-none ring-offset-2 focus:ring-2 focus:ring-brand-900 transition-all shadow-sm"
-                    title="Black"
-                  ></button>
-                  <button
-                    data-color="White"
-                    className="w-7 h-7 rounded-full bg-white border-2 border-neutral-300 focus:outline-none ring-offset-2 focus:ring-2 focus:ring-brand-900 transition-all shadow-sm"
-                    title="White"
-                  ></button>
-                  <button
-                    data-color="Gray"
-                    className="w-7 h-7 rounded-full bg-neutral-400 border-2 border-transparent focus:outline-none ring-offset-2 focus:ring-2 focus:ring-brand-900 transition-all shadow-sm"
-                    title="Gray"
-                  ></button>
-                  <button
-                    data-color="Beige"
-                    className="w-7 h-7 rounded-full bg-[#E5DCC3] border-2 border-transparent focus:outline-none ring-offset-2 focus:ring-2 focus:ring-brand-900 transition-all shadow-sm"
-                    title="Beige"
-                  ></button>
-                  <button
-                    data-color="Olive"
-                    className="w-7 h-7 rounded-full bg-[#555D50] border-2 border-transparent focus:outline-none ring-offset-2 focus:ring-2 focus:ring-brand-900 transition-all shadow-sm"
-                    title="Olive"
-                  ></button>
-                </div>
-              </div>
-
-              <div className="border-t border-brand-100 pt-6">
-                <button
-                  id="reset-filters-btn"
-                  className="w-full border border-brand-300 text-brand-900 py-2.5 rounded-lg text-xs uppercase tracking-widest font-medium hover:bg-brand-900 hover:text-white transition-all"
-                >
-                  Reset All Filters
-                </button>
-              </div>
-            </div>
-          </aside>
-
-          <div className="lg:col-span-3">
-            <div
-              id="active-filters-bar"
-              className="flex flex-wrap items-center gap-2 mb-6 hidden"
+          <label className="flex items-center gap-2 text-sm text-muted">
+            <span className="hidden sm:inline">Sort by</span>
+            <select
+              value={sortKey}
+              onChange={(event) => updateParam("sort", event.target.value, "featured")}
+              className="input w-auto cursor-pointer rounded-full pr-8"
             >
-              <span className="text-xs text-neutral-400 uppercase tracking-widest">
-                Active:
-              </span>
-            </div>
-
-            <div
-              id="product-grid"
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-10"
-            >
-              {products.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  openProductModal={() => {}}
-                  toggleWishlist={() => {}}
-                  addToCart={() => addToCart(product)}
-                />
+              {Object.entries(SORTS).map(([key, sort]) => (
+                <option key={key} value={key}>
+                  {sort.label}
+                </option>
               ))}
-            </div>
-
-            <div
-              id="empty-state"
-              className="hidden text-center py-24 border border-dashed border-brand-200 rounded-xl mt-4"
-            >
-              <i
-                data-lucide="package-open"
-                className="w-12 h-12 text-neutral-300 mx-auto mb-4"
-              ></i>
-              <h3 className="text-lg font-medium text-brand-900">
-                No matching products found
-              </h3>
-              <p className="text-sm text-neutral-500 mt-1">
-                Try adjusting your filter parameters or search criteria.
-              </p>
-              <button
-                id="clear-search-filters"
-                className="mt-6 bg-brand-900 text-white px-6 py-2.5 rounded-lg text-xs uppercase tracking-widest font-medium hover:bg-neutral-800 transition-colors"
-              >
-                Clear All Filters
-              </button>
-            </div>
-          </div>
+            </select>
+          </label>
         </div>
-      </main>
-      <Footer />
-    </>
+      </div>
+
+      {/* Category chips (empty categories are hidden) */}
+      <nav aria-label="Categories" className="scroll-row -mx-4 mt-6 gap-2 px-4 pb-1">
+        <CategoryChip
+          label="All"
+          count={products?.length}
+          active={categorySlug === "all"}
+          onClick={() => updateParam("category", "all", "all")}
+        />
+        {categories
+          .filter((category) => category.product_count > 0 || category.slug === categorySlug)
+          .map((category) => (
+            <CategoryChip
+              key={category.slug}
+              label={category.name}
+              count={category.product_count}
+              active={category.slug === categorySlug}
+              onClick={() => updateParam("category", category.slug, "all")}
+            />
+          ))}
+      </nav>
+
+      <div className="mt-8">
+        {error ? (
+          <div className="card px-6 py-14 text-center">
+            <h2 className="text-2xl font-semibold">The shop didn't load</h2>
+            <p className="mx-auto mt-2 max-w-md text-muted">{error}</p>
+            <button type="button" onClick={load} className="btn-primary mt-6">
+              Try again
+            </button>
+          </div>
+        ) : products === null ? (
+          <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:gap-x-6 md:grid-cols-3 lg:grid-cols-4">
+            {Array.from({ length: 8 }, (_, index) => (
+              <ProductCardSkeleton key={index} />
+            ))}
+          </div>
+        ) : visibleProducts.length === 0 ? (
+          <div className="card px-6 py-14 text-center">
+            <h2 className="text-2xl font-semibold">No products found</h2>
+            <p className="mx-auto mt-2 max-w-md text-muted">
+              {query
+                ? `Nothing matches “${query}”${activeCategory ? ` in ${activeCategory.name}` : ""}.`
+                : "There's nothing in this category yet."}
+            </p>
+            {hasFilters && (
+              <button
+                type="button"
+                onClick={() => setSearchParams({}, { replace: true })}
+                className="btn-secondary mt-6"
+              >
+                Show all products
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:gap-x-6 md:grid-cols-3 lg:grid-cols-4">
+            {visibleProducts.map((product) => (
+              <ProductCard
+                key={product.product_id}
+                product={product}
+                addToCart={() => addToCart(product)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </PageLayout>
+  );
+}
+
+function CategoryChip({ label, count, active, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`shrink-0 cursor-pointer whitespace-nowrap rounded-full border px-4 py-2 text-sm font-semibold transition-colors ${
+        active
+          ? "border-berry bg-berry text-white"
+          : "border-line bg-card text-ink hover:border-berry hover:text-berry"
+      }`}
+    >
+      {label}
+      {count != null && <span className={active ? "ml-1.5 text-white/75" : "ml-1.5 text-muted"}>{count}</span>}
+    </button>
   );
 }

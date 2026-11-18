@@ -1,132 +1,133 @@
 import { useState } from "react";
-import SocialLogin from "./SocialLogin";
+import { useAuth } from "../../context/AuthContext";
+import { CloseIcon } from "../Icons";
 
-export default function LoginForm({onSignUp}) {
+export default function LoginForm({ onSignUp, onClose }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const { login } = useAuth();
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
+    setError("");
+    setIsSubmitting(true);
 
-    // Connect this to FastAPI later.
+    try {
+      await login(email, password, rememberMe);
+      onClose?.(); // logged in: close the popup
+    } catch (err) {
+      setError(err.message);
+      setPassword("");
+      setIsSubmitting(false);
+    }
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/10 p-4 backdrop-blur-[3px]">
-      <form
-        onSubmit={handleSubmit}
-        className="w-full max-w-sm space-y-5 rounded-2xl p-8 font-poppins bg-white"
-      >
-        <div>
-          <h1 className="text-2xl font-bold text-stone-800">
-            Login to <span className="font-serif text-3xl">LaCrochet.</span>
-          </h1>
-          <p className="mt-2 text-sm text-stone-500">
-            Sign in to your account.
-          </p>
-        </div>
+    <form
+      onSubmit={handleSubmit}
+      className="card relative my-auto w-full max-w-sm space-y-5 p-8 shadow-xl shadow-ink/10"
+    >
+      {onClose && (
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close"
+          className="absolute right-4 top-4 cursor-pointer rounded-full p-1.5 text-muted hover:bg-sand hover:text-ink"
+        >
+          <CloseIcon />
+        </button>
+      )}
 
-        <div className="space-y-1">
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label
-                htmlFor="email"
-                className="mb-2 block text-sm font-medium text-stone-700"
-              >
-                Email
-              </label>
+      <div>
+        <h1 className="text-2xl font-semibold">Welcome back</h1>
+        <p className="mt-1 text-sm text-muted">Log in to your La Crochet account.</p>
+      </div>
 
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                placeholder="you@example.com"
-                required
-                className="w-full rounded-lg border border-stone-300 px-4 py-2 outline-none focus:ring-2 focus:ring-[#3F0000]"
-              />
-            </div>
+      <div>
+        <label htmlFor="login-email" className="label">
+          Email
+        </label>
+        <input
+          id="login-email"
+          name="email"
+          type="email"
+          autoComplete="email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          placeholder="you@example.com"
+          required
+          className="input"
+        />
+      </div>
 
-            <div className="space-y-2">
-              <label
-                htmlFor="password"
-                className="mb-2 block text-sm font-medium text-stone-700"
-              >
-                Password
-              </label>
-
-              <div className="flex flex-row items-center justify-between border rounded-lg border-stone-300 focus-within:ring-2 focus-within:ring-[#3F0000]">
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  placeholder="Password"
-                  autoComplete="current-password"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  required
-                  className="px-4 py-2 outline-none flex-1 bg-transparent"
-                />
-
-                <a
-                  className="px-4 py-2 text-sm font-medium text-[#121212] hover:text-[#3F0000] shrink-0"
-                  href="#"
-                >
-                  Forgot?
-                </a>
-              </div>
-            </div>
-          </div>
-          <div className="flex flex-row text-center items-center">
-            <input id="remember-me" name="remember-me" type="checkbox" />
-            <label
-              htmlFor="remember-me"
-              className="ml-2 block text-sm text-stone-900"
-            >
-              Remember me
-            </label>
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <button
-            type="submit"
-            className="w-full rounded-lg bg-[#292929] px-4 py-2 font-semibold text-white transition-colors hover:bg-black cursor-pointer"
-          >
-            Sign in
-          </button>
-
+      <div>
+        <label htmlFor="login-password" className="label">
+          Password
+        </label>
+        <div className="relative">
+          <input
+            id="login-password"
+            name="password"
+            type={showPassword ? "text" : "password"}
+            autoComplete="current-password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            required
+            className="input pr-16"
+          />
           <button
             type="button"
-            onClick={onSignUp}
-            className="w-full rounded-lg bg-[#f7f7f7] px-4 py-2 font-normal border border-stone-300  hover:text-white text-black transition-colors hover:bg-black cursor-pointer"
+            onClick={() => setShowPassword((shown) => !shown)}
+            className="absolute inset-y-0 right-3 cursor-pointer text-xs font-bold text-muted hover:text-ink"
+            aria-label={showPassword ? "Hide password" : "Show password"}
           >
-            Sign up
+            {showPassword ? "Hide" : "Show"}
           </button>
-
-          <div className="flex items-center justify-center text-sm text-stone-400">
-            <div className="h-px w-full bg-[#121212] my-4" />
-            <p className="px-4">or</p>
-            <div className="h-px w-full bg-[#121212] my-4" />
-          </div>
-          <SocialLogin />
         </div>
+      </div>
 
-        <div className="text-xs text-center align-center text-black/60">
-          By logging in, you agree to LaCrochet's
-          <a className="text-black/60" href="#">
-            {" "}
-            Terms of Service{" "}
-          </a>
-          &
-          <a className="text-black/60" href="#">
-            {" "}
-            Privacy Policy
-          </a>
-        </div>
-      </form>
-    </div>
+      <label className="flex cursor-pointer items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          checked={rememberMe}
+          onChange={(event) => setRememberMe(event.target.checked)}
+          className="checkbox"
+        />
+        Keep me logged in for 30 days
+      </label>
+
+      {error && (
+        <p role="alert" className="alert-error">
+          {error}
+        </p>
+      )}
+
+      <button type="submit" disabled={isSubmitting} className="btn-primary w-full">
+        {isSubmitting ? "Logging in…" : "Log in"}
+      </button>
+
+      <p className="text-center text-sm text-muted">
+        New to La Crochet?{" "}
+        <button type="button" onClick={onSignUp} className="link cursor-pointer">
+          Create an account
+        </button>
+      </p>
+
+      <p className="text-center text-xs text-muted">
+        By logging in, you agree to our{" "}
+        <a className="underline" href="/terms" target="_blank" rel="noopener noreferrer">
+          Terms of Service
+        </a>{" "}
+        and{" "}
+        <a className="underline" href="/privacy" target="_blank" rel="noopener noreferrer">
+          Privacy Policy
+        </a>
+        .
+      </p>
+    </form>
   );
 }

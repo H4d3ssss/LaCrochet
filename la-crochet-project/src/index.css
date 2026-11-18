@@ -1,24 +1,151 @@
 @import "tailwindcss";
 @import "./styles/fonts.css";
 
+/* =====================================================================
+   La Crochet design system: warm & cozy
+   Change a colour here and it changes everywhere on the site.
+   ===================================================================== */
 @theme {
-  --font-poppins: "Poppins", sans-serif;
-  --font-lavishly: "Lavishly", sans-serif;
-  --font-yesteryear: "Yesteryear", sans-serif;
-  --font-lora: "Lora", sans-serif;
-  --font-nunino: "Nunito", sans-serif;
+  --color-cream: #fbf7f2;        /* page background */
+  --color-sand: #f3ece4;         /* soft panels, hovers */
+  --color-card: #ffffff;         /* cards, Navbar */
+  --color-berry: #9f1d35;        /* buttons, links, prices */
+  --color-berry-dark: #7a1428;   /* button hover */
+  --color-terracotta: #e8b4a0;   /* small highlights */
+  --color-blush: #f7e4dc;        /* light terracotta tint */
+  --color-ink: #3b2a24;          /* main text, Footer */
+  --color-muted: #8a776e;        /* quieter text */
+  --color-line: #eadfd6;         /* borders */
+
+  --font-sans: "Nunito Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Lora", Georgia, serif;
+  --font-lora: "Lora", Georgia, serif; /* older pages use font-lora */
+}
+
+@layer base {
+  html {
+    background-color: var(--color-cream);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-serif);
+    color: var(--color-ink);
+    text-wrap: balance;
+  }
+
+  ::selection {
+    background-color: var(--color-terracotta);
+    color: var(--color-ink);
+  }
+
+  /* A clear ring for keyboard users, on everything they can tab to. */
+  :focus-visible {
+    outline: 2px solid var(--color-berry);
+    outline-offset: 3px;
+    border-radius: 6px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 }
 
 @layer components {
-  .icon-button {
-    @apply flex items-center justify-center text-center w-full max-w-sm space-y-5 rounded-xl bg-white px-4 py-2 shadow-md cursor-pointer transition-transform transform hover:scale-103;
+  /* ---- Buttons ---- */
+  .btn-primary {
+    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-berry px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-berry-dark disabled:cursor-not-allowed disabled:opacity-60;
+  }
+  .btn-secondary {
+    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-full border border-berry bg-transparent px-6 py-3 text-sm font-bold text-berry transition-colors hover:bg-berry hover:text-white disabled:cursor-not-allowed disabled:opacity-60;
+  }
+  .btn-quiet {
+    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-ink transition-colors hover:bg-sand;
   }
 
-h1, h2, h3 {
-  font-family: var(--font-lora);
-}
+  /* ---- Surfaces ---- */
+  .card {
+    @apply rounded-2xl border border-line bg-card;
+  }
 
-a, p, span {
-  font-family: var(--font-nunito);
-}
+  /* ---- Forms ---- */
+  .label {
+    @apply mb-1.5 block text-sm font-semibold text-ink;
+  }
+  .input {
+    @apply w-full rounded-xl border border-line bg-white px-4 py-2.5 text-sm text-ink transition outline-none placeholder:text-muted/70 focus:border-berry focus:ring-2 focus:ring-berry/15;
+  }
+  .checkbox {
+    @apply h-4 w-4 shrink-0 cursor-pointer accent-berry;
+  }
+
+  /* ---- Text ---- */
+  .link {
+    @apply font-semibold text-berry underline decoration-berry/30 underline-offset-4 transition-colors hover:decoration-berry;
+  }
+  .page-title {
+    @apply font-serif text-3xl font-semibold text-ink sm:text-4xl;
+  }
+
+  /* ---- Messages ---- */
+  .alert-error {
+    @apply rounded-xl border border-berry/20 bg-blush px-4 py-3 text-sm text-berry-dark;
+  }
+  .alert-success {
+    @apply rounded-xl border border-[#cfe3cc] bg-[#eef6ec] px-4 py-3 text-sm text-[#2f5d33];
+  }
+
+  /* ---- The crochet edge ----
+     A row of little scallops, like the trim on a crocheted doily.
+     Used under the Navbar and on top of the Footer. */
+  .scallop-down {
+    height: 10px;
+    background: radial-gradient(circle at 10px 0, var(--color-card) 9.5px, transparent 10px)
+      0 0 / 20px 10px repeat-x;
+  }
+  .scallop-up {
+    height: 10px;
+    background: radial-gradient(circle at 10px 10px, var(--color-ink) 9.5px, transparent 10px)
+      0 0 / 20px 10px repeat-x;
+  }
+
+  /* The same trim running down the right side of the back-office menu. */
+  .scallop-right {
+    width: 10px;
+    background: radial-gradient(circle at 0 10px, var(--color-ink) 9.5px, transparent 10px)
+      0 0 / 10px 20px repeat-y;
+  }
+
+  /* Filter chips (orders, products, newsletter). */
+  .chip {
+    @apply inline-flex shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-full border border-line bg-card px-3.5 py-1.5 text-sm font-semibold text-ink transition-colors hover:border-ink;
+  }
+  .chip[aria-selected="true"],
+  .chip[aria-pressed="true"] {
+    @apply border-ink bg-ink text-cream;
+  }
+
+  /* Smaller buttons for busy admin screens. */
+  .btn-small {
+    @apply px-4 py-2 text-xs;
+  }
+
+  /* Horizontal scrolling rows (tabs, category chips) without a visible scrollbar. */
+  .scroll-row {
+    @apply flex overflow-x-auto overflow-y-hidden;
+    scrollbar-width: none;
+  }
+  .scroll-row::-webkit-scrollbar {
+    display: none;
+  }
 }

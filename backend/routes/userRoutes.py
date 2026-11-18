@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.exc import IntegrityError
@@ -8,29 +8,36 @@ from database import get_db
 from models.addressModel import Address
 from models.userModel import User
 from schemas.userSchemas import UserOut, UserRegister
-from security import hash_password
+from auth import create_access_token, get_current_user
+from schemas.userSchemas import AddressOut, LoginRequest, LoginResponse, UserProfile
+from security import hash_password, verify_password
 
 router = APIRouter()
 
-# users.terms_version is a DATETIME column, so the "version" is the date the
-# terms last changed. Bump this when the Terms of Service are updated.
-CURRENT_TERMS_VERSION = datetime(2026, 11, 18)
+# users.terms_version is a DATE column: the day the terms last changed.
+# Bump this when the Terms of Service are updated.
+CURRENT_TERMS_VERSION = date(2026, 11, 18)
 
 DUPLICATE_EMAIL = "An account with this email already exists."
+WRONG_LOGIN = "Incorrect email or password."
+
+# Checked when the email doesn't exist, so a wrong email takes as long as a
+# wrong password (otherwise attackers could time it to find real emails).
+_DUMMY_HASH = hash_password("not-a-real-password")
 
 
-MYSQL_DUPLICATE_ENTRY = 1062
+# PostgreSQL's code for "this value already exists" (unique_violation).
+POSTGRES_UNIQUE_VIOLATION = "23505"
 
 
 def _is_duplicate_key(exc: IntegrityError) -> bool:
-    """True only for MySQL 'Duplicate entry' (error 1062)."""
-    args = getattr(exc.orig, "args", ())
-    return bool(args) and args[0] == MYSQL_DUPLICATE_ENTRY
+    """True only when a UNIQUE rule was broken, e.g. the email is taken."""
+    return getattr(exc.orig, "sqlstate", None) == POSTGRES_UNIQUE_VIOLATION
 
 
 def _utcnow() -> datetime:
-    """Naive UTC, matching the DATETIME columns."""
-    return datetime.now(timezone.utc).replace(tzinfo=None)
+    """Current time in UTC (columns are timestamptz)."""
+    return datetime.now(timezone.utc)
 
 
 @router.post(
@@ -49,7 +56,7 @@ def register(payload: UserRegister, db: Session = Depends(get_db)):
         email=payload.email,
         password_hash=hash_password(payload.password),
         phone=payload.phone,
-        marketing_opt_in=1 if payload.marketing_opt_in else 0,
+        marketing_opt_in=payload.marketing_opt_in,
         terms_accepted_at=now,
         terms_version=CURRENT_TERMS_VERSION,
         email_verified_at=None,
@@ -97,3 +104,40 @@ def register(payload: UserRegister, db: Session = Depends(get_db)):
 
     db.refresh(user)
     return user
+
+
+def _default_address(db: Session, user: User):
+    address = (
+        db.query(Address)
+        .filter(Address.user_id == user.user_id)
+        .order_by(Address.is_default.desc(), Address.updated_at.desc())
+        .first()
+    )
+    return AddressOut.model_validate(address) if address else None
+
+
+def _profile(db: Session, user: User) -> UserProfile:
+    profile = UserProfile.model_validate(user)
+    profile.default_address = _default_address(db, user)
+    return profile
+
+
+@router.post("/auth/login", response_model=LoginResponse)
+def login(payload: LoginRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == payload.email).first()
+
+    if user is None:
+        verify_password(payload.password, _DUMMY_HASH)  # same wait time either way
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, WRONG_LOGIN)
+
+    if not verify_password(payload.password, user.password_hash):
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, WRONG_LOGIN)
+
+    token, expires_at = create_access_token(user.user_id, payload.remember_me)
+    return LoginResponse(access_token=token, expires_at=expires_at, user=_profile(db, user))
+
+
+@router.get("/auth/me", response_model=UserProfile)
+def me(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Who is logged in? Used when the website opens, to stay logged in."""
+    return _profile(db, user)

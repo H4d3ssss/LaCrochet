@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+import { API_BASE_URL as API_URL } from "./config";
 
 const GENERIC_ERROR = "Could not create your account. Please try again.";
 
@@ -61,6 +61,47 @@ export async function registerUser(account) {
 
   if (!response.ok) {
     throw new Error(await readError(response));
+  }
+
+  return response.json();
+}
+
+
+// Log in. Resolves with { access_token, expires_at, user }.
+export async function loginUser(email, password, rememberMe) {
+  let response;
+  try {
+    response = await fetch(`${API_URL}/api/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password, remember_me: rememberMe }),
+    });
+  } catch {
+    throw new Error(
+      "Could not reach the server. Please check your connection and try again."
+    );
+  }
+
+  if (!response.ok) {
+    const message = await readError(response);
+    throw new Error(
+      message === GENERIC_ERROR ? "Could not log you in. Please try again." : message
+    );
+  }
+
+  return response.json();
+}
+
+// Who is logged in? Throws an Error with status 401 if the login expired.
+export async function fetchMe(token) {
+  const response = await fetch(`${API_URL}/api/auth/me`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (!response.ok) {
+    const error = new Error("Could not load your account.");
+    error.status = response.status;
+    throw error;
   }
 
   return response.json();

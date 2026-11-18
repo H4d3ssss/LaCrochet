@@ -1,48 +1,18 @@
-@font-face {
-  font-family: "Poppins";
-  src: url("../assets/fonts/Poppins/Poppins-Regular.ttf") format("truetype");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Poppins";
-  src: url("../assets/fonts/Poppins/Poppins-Bold.ttf") format("truetype");
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Lavishly";
-  src: url("../assets/fonts/Lavishly/LavishlyYours-Regular.ttf") format("truetype");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Yesteryear";
-  src: url("../assets/fonts/Yesteryear/Yesteryear-Regular.ttf") format("truetype");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-/* Main Font */
+/* Lora: headings. One variable font file covers every weight from 400 to 700. */
 @font-face {
   font-family: "Lora";
   src: url("../assets/fonts/Lora/Lora-VariableFont_wght.ttf") format("truetype");
-  font-weight: 400;
+  font-weight: 400 700;
   font-style: normal;
   font-display: swap;
 }
 
-/* Accent Font */
 @font-face {
-  font-family: "Nunito";
-  src: url("../assets/fonts/Nunito_Sans/NunitoSans-VariableFont_YTLC,opsz,wdth,wght.ttf") format("truetype");
-  font-weight: 400;
-  font-style: normal;
+  font-family: "Lora";
+  src: url("../assets/fonts/Lora/Lora-Italic-VariableFont_wght.ttf") format("truetype");
+  font-weight: 400 700;
+  font-style: italic;
   font-display: swap;
 }
+
+/* Nunito Sans (body text) loads from Google Fonts in index.html. */

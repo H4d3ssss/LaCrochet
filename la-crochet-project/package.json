@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@lalamove/lalamove-js": "^1.1.0",
+    "@supabase/supabase-js": "^2.119.1",
     "@tailwindcss/vite": "^4.3.3",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",

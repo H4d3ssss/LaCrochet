@@ -1,4 +1,5 @@
 import re
+from datetime import datetime
 from typing import Annotated, Optional
 
 from pydantic import (
@@ -74,6 +75,47 @@ class UserRegister(BaseModel):
         if self.shipping_address is not None and self.phone is None:
             raise ValueError("A mobile number is required when adding a shipping address.")
         return self
+
+
+class LoginRequest(BaseModel):
+    email: str = Field(max_length=255)
+    password: str = Field(max_length=128)
+    remember_me: bool = False
+
+    @field_validator("email")
+    @classmethod
+    def normalize_email(cls, value: str) -> str:
+        return value.strip().lower()
+
+
+class AddressOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    street: str
+    barangay: str
+    city: str
+    province: str
+    postal_code: str
+    country: str
+
+
+class UserProfile(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    user_id: int
+    first_name: str
+    last_name: str
+    email: str
+    phone: Optional[str]
+    role: str
+    default_address: Optional[AddressOut] = None
+
+
+class LoginResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    expires_at: datetime
+    user: UserProfile
 
 
 class UserOut(BaseModel):

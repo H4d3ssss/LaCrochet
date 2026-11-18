@@ -1,23 +1,23 @@
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, func
 
 from database import Base
 
 
 class Address(Base):
-  __tablename__ = "addresses"  # Adjust table name if it differs slightly in your DB
+    __tablename__ = "addresses"
 
-  id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-  user_id = Column(
-      Integer, ForeignKey("users.user_id"), nullable=False, index=True
-  )
-  recipient_name = Column(String(200), nullable=False)
-  phone = Column(String(20), nullable=False)
-  street = Column(String(255), nullable=False)
-  barangay = Column(String(100), nullable=False)
-  city = Column(String(100), nullable=False)
-  province = Column(String(100), nullable=False)
-  postal_code = Column(String(10), nullable=False)
-  country = Column(String(100), nullable=False)
-  is_default = Column(Boolean, nullable=True, default=False)
-  created_at = Column(DateTime, nullable=False)
-  updated_at = Column(DateTime, nullable=False)
+    address_id = Column(Integer, primary_key=True)
+    user_id = Column(
+        Integer, ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    recipient_name = Column(String(200), nullable=False)
+    phone = Column(String(20), nullable=False)
+    street = Column(String(255), nullable=False)
+    barangay = Column(String(100), nullable=False)
+    city = Column(String(100), nullable=False)
+    province = Column(String(100), nullable=False)
+    postal_code = Column(String(10), nullable=False)
+    country = Column(String(100), nullable=False, server_default="Philippines")
+    is_default = Column(Boolean, nullable=False, server_default="false")
+    created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
