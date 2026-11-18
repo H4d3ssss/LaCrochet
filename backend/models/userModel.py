@@ -1,7 +1,6 @@
 from sqlalchemy import Boolean, Column, DateTime, Integer, String
-from sqlalchemy.ext.declarative import declarative_base
 
-Base = declarative_base()
+from database import Base
 
 
 class User(Base):
@@ -23,7 +22,7 @@ class User(Base):
   terms_version = Column(
       DateTime, nullable=False
   )  
-  email_verified_at = Column(String(50), nullable=False)
+  email_verified_at = Column(DateTime, nullable=True)  # NULL until the email is verified
   created_at = Column(DateTime, nullable=False)
   updated_at = Column(DateTime, nullable=False)
   email = Column(String(255), unique=True, index=True, nullable=False)

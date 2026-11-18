@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { registerUser } from "../../api/auth";
 
 const inputClass =
   "w-full rounded-lg border border-stone-300 bg-white px-4 py-2.5 text-sm outline-none transition focus:border-[#3F0000] focus:ring-1 focus:ring-[#3F0000]";
@@ -18,11 +19,16 @@ function Field({ label, id, ...props }) {
   );
 }
 
-export default function SignupForm({ onClose, onLoginClick, onSignup }) {
+export default function SignupForm({
+  onClose,
+  onLoginClick,
+  onSignup = registerUser,
+}) {
   const [showPassword, setShowPassword] = useState(false);
   const [addAddress, setAddAddress] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [createdName, setCreatedName] = useState(null);
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -32,11 +38,6 @@ export default function SignupForm({ onClose, onLoginClick, onSignup }) {
 
     if (data.get("password") !== data.get("confirmPassword")) {
       setError("Your passwords do not match.");
-      return;
-    }
-
-    if (!onSignup) {
-      setError("Signup is not connected yet.");
       return;
     }
 
@@ -68,11 +69,49 @@ export default function SignupForm({ onClose, onLoginClick, onSignup }) {
     try {
       setIsSubmitting(true);
       await onSignup(account);
-    } catch {
-      setError("Could not create your account. Please try again.");
+      setCreatedName(account.firstName);
+    } catch (err) {
+      setError(err?.message || "Could not create your account. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  if (createdName) {
+    return (
+      <div className="fixed inset-0 z-50 overflow-y-auto bg-black/30 backdrop-blur-sm">
+        <div className="flex min-h-full items-center justify-center p-4 sm:p-8">
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="signup-success-title"
+            className="w-full max-w-md rounded-2xl bg-white p-8 text-center font-poppins shadow-xl"
+          >
+            <h1
+              id="signup-success-title"
+              className="text-2xl font-bold text-stone-800"
+            >
+              Welcome to <span className="font-serif text-3xl">LaCrochet,</span>{" "}
+              {createdName}!
+            </h1>
+
+            <p className="mt-3 text-sm text-stone-500">
+              Your account has been created.
+            </p>
+
+            {(onLoginClick || onClose) && (
+              <button
+                type="button"
+                onClick={onLoginClick ?? onClose}
+                className="mt-6 w-full cursor-pointer rounded-lg bg-[#292929] px-4 py-3 font-semibold text-white transition-colors hover:bg-black"
+              >
+                {onLoginClick ? "Sign in" : "Continue shopping"}
+              </button>
+            )}
+          </section>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -145,12 +184,17 @@ export default function SignupForm({ onClose, onLoginClick, onSignup }) {
               </div>
 
               <Field
-                label="Mobile number (optional)"
+                label={
+                  addAddress
+                    ? "Mobile number (needed for delivery)"
+                    : "Mobile number (optional)"
+                }
                 id="signup-phone"
                 name="phone"
                 type="tel"
                 autoComplete="tel"
                 placeholder="+63 917 123 4567"
+                required={addAddress}
               />
             </fieldset>
 

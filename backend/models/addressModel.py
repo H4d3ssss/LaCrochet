@@ -1,7 +1,6 @@
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String
-from sqlalchemy.ext.declarative import declarative_base
 
-Base = declarative_base()
+from database import Base
 
 
 class Address(Base):

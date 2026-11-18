@@ -7,6 +7,7 @@ from lalamove import LalamoveSDK
 
 # Import routers
 from routes.productRoutes import router as product_router
+from routes.userRoutes import router as user_router
 
 app = FastAPI(
     title="La Crochet API",
@@ -39,3 +40,4 @@ def read_root():
     return {"message": "La Crochet API is running!"}
 
 app.include_router(product_router, prefix="/api", tags=["Products"])
+app.include_router(user_router, prefix="/api", tags=["Auth"])
