@@ -111,7 +111,7 @@ export function CartProvider({ children }) {
     if (!user) {
       requestLogin(() => {
         pendingAddRef.current = { productId, quantity: amount };
-      });
+      }, "to add this to your cart");
       return { ok: false, needsLogin: true };
     }
 

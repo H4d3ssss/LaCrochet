@@ -14,6 +14,8 @@ const SORTS = {
   name: { label: "Name: A to Z", compare: (a, b) => a.name.localeCompare(b.name) },
 };
 
+const PAGE_SIZE = 12;
+
 export default function CatalogPage() {
   const { addToCart } = useCart();
   const [products, setProducts] = useState(null); // null = loading
@@ -27,11 +29,15 @@ export default function CatalogPage() {
   const sortKey = SORTS[searchParams.get("sort")] ? searchParams.get("sort") : "featured";
   const query = searchParams.get("q") ?? "";
 
+  const page = Math.max(1, parseInt(searchParams.get("page"), 10) || 1);
+
   function updateParam(name, value, defaultValue) {
     const next = new URLSearchParams(searchParams);
     if (!value || value === defaultValue) next.delete(name);
     else next.set(name, value);
-    setSearchParams(next, { replace: true });
+    if (name !== "page") next.delete("page"); // any filter change goes back to page 1
+    setSearchParams(next, { replace: name !== "page" });
+    if (name === "page") window.scrollTo({ top: 0 });
   }
 
   const load = useCallback(() => {
@@ -66,6 +72,9 @@ export default function CatalogPage() {
   }, [products, activeCategory, query, sortKey]);
 
   const hasFilters = categorySlug !== "all" || query;
+  const totalPages = Math.max(1, Math.ceil(visibleProducts.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages); // a stale ?page=99 clamps to the last page
+  const pageProducts = visibleProducts.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   return (
     <PageLayout width="wide">
@@ -170,15 +179,40 @@ export default function CatalogPage() {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:gap-x-6 md:grid-cols-3 lg:grid-cols-4">
-            {visibleProducts.map((product) => (
-              <ProductCard
-                key={product.product_id}
-                product={product}
-                addToCart={() => addToCart(product)}
-              />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:gap-x-6 md:grid-cols-3 lg:grid-cols-4">
+              {pageProducts.map((product) => (
+                <ProductCard
+                  key={product.product_id}
+                  product={product}
+                  addToCart={() => addToCart(product)}
+                />
+              ))}
+            </div>
+            {totalPages > 1 && (
+              <nav aria-label="Pagination" className="mt-10 flex items-center justify-center gap-4">
+                <button
+                  type="button"
+                  disabled={currentPage === 1}
+                  onClick={() => updateParam("page", String(currentPage - 1), "1")}
+                  className="btn-secondary disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Previous
+                </button>
+                <span className="text-sm text-muted">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <button
+                  type="button"
+                  disabled={currentPage === totalPages}
+                  onClick={() => updateParam("page", String(currentPage + 1), "1")}
+                  className="btn-secondary disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Next
+                </button>
+              </nav>
+            )}
+          </>
         )}
       </div>
     </PageLayout>

@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { registerUser } from "../../api/auth";
 import { useAuth } from "../../context/AuthContext";
-import { CloseIcon } from "../Icons";
+import { useFieldErrors } from "../../utils/fieldErrors";
 
 
 function Field({ label, id, ...props }) {
@@ -28,17 +28,15 @@ export default function SignupForm({
   const [error, setError] = useState("");
   const [createdName, setCreatedName] = useState(null);
   const { login } = useAuth();
+  const formRef = useRef(null);
+
+  useFieldErrors(formRef);
 
   async function handleSubmit(event) {
     event.preventDefault();
     setError("");
 
     const data = new FormData(event.currentTarget);
-
-    if (data.get("password") !== data.get("confirmPassword")) {
-      setError("Your passwords do not match.");
-      return;
-    }
 
     const account = {
       firstName: data.get("firstName").trim(),
@@ -86,16 +84,13 @@ export default function SignupForm({
 
   if (createdName) {
     return (
-          <section
-            aria-labelledby="signup-success-title"
-            className="card my-auto w-full max-w-md p-8 text-center shadow-xl shadow-ink/10"
-          >
-            <h1
+          <section aria-labelledby="signup-success-title" className="py-6 text-center">
+            <h2
               id="signup-success-title"
               className="text-2xl font-semibold"
             >
               Welcome to La Crochet, {createdName}!
-            </h1>
+            </h2>
 
             <p className="mt-2 text-sm text-muted">
               Your account is ready and you're logged in.
@@ -115,30 +110,16 @@ export default function SignupForm({
   }
 
   return (
-        <section
-          aria-labelledby="signup-title"
-          className="card relative my-auto w-full max-w-2xl p-6 shadow-xl shadow-ink/10 sm:p-10"
-        >
-          {onClose && (
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Close"
-              className="absolute right-4 top-4 cursor-pointer rounded-full p-1.5 text-muted hover:bg-sand hover:text-ink"
-            >
-              <CloseIcon />
-            </button>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-7">
+        <section aria-labelledby="signup-title">
+          <form ref={formRef} onSubmit={handleSubmit} className="space-y-7">
             {/* Heading */}
             <div>
-              <h1
+              <h2
                 id="signup-title"
                 className="text-2xl font-semibold"
               >
                 Create your account
-              </h1>
+              </h2>
 
               <p className="mt-1 text-sm text-muted">
                 Save your cart, check out faster, and keep track of your orders.
@@ -201,34 +182,23 @@ export default function SignupForm({
                 id="signup-email"
                 name="email"
                 type="email"
-                autoComplete="email"
+                autoComplete="username"
+                spellCheck={false}
                 placeholder="you@example.com"
                 required
               />
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field
-                  label="Password"
-                  id="signup-password"
-                  name="password"
-                  type={showPassword ? "text" : "password"}
-                  autoComplete="new-password"
-                  placeholder="Create a password"
-                  minLength={8}
-                  aria-describedby="signup-password-hint"
-                  required
-                />
-
-                <Field
-                  label="Confirm password"
-                  id="signup-confirm-password"
-                  name="confirmPassword"
-                  type={showPassword ? "text" : "password"}
-                  autoComplete="new-password"
-                  placeholder="Re-enter password"
-                  required
-                />
-              </div>
+              <Field
+                label="Password"
+                id="signup-password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                autoComplete="new-password"
+                placeholder="Create a password"
+                minLength={8}
+                aria-describedby="signup-password-hint"
+                required
+              />
 
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <p id="signup-password-hint" className="text-xs text-muted">
@@ -242,7 +212,7 @@ export default function SignupForm({
                     onChange={(event) => setShowPassword(event.target.checked)}
                     className="checkbox"
                   />
-                  Show passwords
+                  Show password
                 </label>
               </div>
             </fieldset>
@@ -410,18 +380,7 @@ export default function SignupForm({
               {isSubmitting ? "Creating your account…" : "Create account"}
             </button>
 
-            {onLoginClick && (
-              <p className="text-center text-sm text-muted">
-                Already have an account?{" "}
-                <button
-                  type="button"
-                  onClick={onLoginClick}
-                  className="link cursor-pointer"
-                >
-                  Sign in
-                </button>
-              </p>
-            )}
+            <p data-announcer aria-live="polite" className="sr-only" />
           </form>
           <p className="mt-6 text-center text-sm text-muted">
             Already have an account?{" "}

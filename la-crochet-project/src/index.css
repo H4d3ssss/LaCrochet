@@ -149,3 +149,64 @@
     display: none;
   }
 }
+
+/* =====================================================================
+   Log in / create account popup
+   A native <dialog>: the browser handles focus, Esc and the dimmed page.
+   ===================================================================== */
+@layer components {
+  .auth-dialog {
+    margin: auto;
+    width: min(100% - 1.5rem, 54rem);
+    max-height: calc(100dvh - 1.5rem);
+    padding: 0;
+    border: 0;
+    border-radius: 1.5rem;
+    background: var(--color-card);
+    color: var(--color-ink);
+    overflow: hidden;
+    box-shadow: 0 30px 80px -20px rgb(59 42 36 / 0.45);
+  }
+  /* Only set a layout when it's open, so closed stays hidden. */
+  .auth-dialog[open] {
+    display: flex;
+    animation: auth-pop 180ms ease-out;
+  }
+  .auth-dialog::backdrop {
+    background: rgb(59 42 36 / 0.45);
+    backdrop-filter: blur(3px);
+  }
+
+  /* Stop the page behind from scrolling while the popup is open. */
+  .auth-dialog:modal {
+    overscroll-behavior: contain;
+  }
+  .auth-dialog::backdrop {
+    overflow: hidden;
+    overscroll-behavior: contain;
+  }
+  .auth-scroll {
+    overscroll-behavior: contain;
+  }
+
+  /* Field errors appear only after someone has finished with a field
+     (or pressed the button), never while they're still typing. */
+  .auth-dialog .field-error {
+    display: none;
+    @apply mt-1.5 items-start gap-1.5 text-xs font-semibold text-berry;
+  }
+  .auth-dialog .field:has(:user-invalid) .field-error {
+    display: flex;
+  }
+  .auth-dialog .input:user-invalid {
+    border-color: var(--color-berry);
+    background-color: #fdf4f1;
+  }
+}
+
+@keyframes auth-pop {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}

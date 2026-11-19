@@ -16,6 +16,7 @@ from routes.adminRoutes import router as admin_router
 from routes.cartRoutes import router as cart_router
 from routes.newsletterRoutes import router as newsletter_router
 from routes.orderRoutes import router as order_router
+from routes.paymentRoutes import router as payment_router
 from routes.productRoutes import router as product_router
 from routes.userRoutes import router as user_router
 
@@ -56,5 +57,6 @@ app.include_router(product_router, prefix="/api", tags=["Products"])
 app.include_router(user_router, prefix="/api", tags=["Auth"])
 app.include_router(cart_router, prefix="/api", tags=["Cart"])
 app.include_router(order_router, prefix="/api", tags=["Orders"])
+app.include_router(payment_router, prefix="/api", tags=["Payments"])
 app.include_router(newsletter_router, prefix="/api", tags=["Newsletter"])
 app.include_router(admin_router, prefix="/api/admin", tags=["Admin"])

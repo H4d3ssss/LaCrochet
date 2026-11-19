@@ -54,6 +54,28 @@ def _find_order(db: Session, order_number: str, token: str, lock: bool = False) 
     return order
 
 
+def mark_paid(db: Session, order: Order) -> bool:
+    """Record that an online order has been paid. Safe to call more than once.
+
+    Used by the PayRex webhook and by the confirmation page, whichever hears first.
+    Returns True if this call changed anything.
+    """
+    if order.payment_status == "paid":
+        return False
+
+    order.payment_status = "paid"
+    if order.order_status == "pending":
+        order.order_status = "processing"  # ready for the owner to prepare
+        if order.user_id is not None:
+            clear_cart(db, order.user_id)  # paid: empty their cart
+    elif order.order_status == "cancelled":
+        # Rare: the money arrived after the order was cancelled (and restocked).
+        # Leave a note so the owner sees it in the back office and can refund or restore it.
+        note = "Paid online after this order was cancelled. Refund it in PayRex or restore the order."
+        order.notes = f"{order.notes}\n{note}" if order.notes else note
+    return True
+
+
 def _cancel_and_restock(db: Session, order: Order) -> None:
     """Cancel an unpaid order and put its items back in stock."""
     order.order_status = "cancelled"
@@ -175,6 +197,9 @@ def create_order(
                     "payment_methods": PAYREX_METHODS,
                     "line_items": line_items,
                     "description": f"La Crochet order {order.order_number}",
+                    # PayRex copies this onto the payment, so its webhook can tell us
+                    # which order was paid.
+                    "metadata": {"order_number": order.order_number},
                 }
             )
         except Exception as exc:
@@ -235,10 +260,7 @@ def get_order(order_number: str, token: str, db: Session = Depends(get_db)):
         try:
             session = payrex.checkout_sessions.retrieve(order.payrex_checkout_session_id)
             if session.status == "completed":
-                order.payment_status = "paid"
-                order.order_status = "processing"
-                if order.user_id is not None:
-                    clear_cart(db, order.user_id)  # paid: empty their cart
+                mark_paid(db, order)
             elif session.status == "expired":
                 _cancel_and_restock(db, order)
         except Exception:
@@ -268,10 +290,7 @@ def cancel_unpaid_order(order_number: str, token: str, db: Session = Depends(get
                 session = payrex.checkout_sessions.retrieve(order.payrex_checkout_session_id)
                 if session.status == "completed":
                     # They actually paid — don't cancel.
-                    order.payment_status = "paid"
-                    order.order_status = "processing"
-                    if order.user_id is not None:
-                        clear_cart(db, order.user_id)
+                    mark_paid(db, order)
                     db.commit()
                     db.refresh(order)
                     return order

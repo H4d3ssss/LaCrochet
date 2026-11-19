@@ -31,11 +31,15 @@ export function AuthProvider({ children }) {
 
   // A login popup any page can open (e.g. when a guest clicks "Add to Cart"),
   // plus something to do once they've logged in.
+  // "reason" finishes the sentence "Log in or create an account …" in the popup,
+  // e.g. "to add this to your cart".
   const [loginPromptOpen, setLoginPromptOpen] = useState(false);
+  const [loginReason, setLoginReason] = useState(null);
   const afterLoginRef = useRef(null);
 
-  const requestLogin = useCallback((afterLogin = null) => {
+  const requestLogin = useCallback((afterLogin = null, reason = null) => {
     afterLoginRef.current = afterLogin;
+    setLoginReason(reason);
     setLoginPromptOpen(true);
   }, []);
 
@@ -105,6 +109,7 @@ export function AuthProvider({ children }) {
         login,
         logout,
         loginPromptOpen,
+        loginReason,
         requestLogin,
         closeLoginPrompt,
       }}
